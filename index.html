@@ -247,6 +247,34 @@
   a.btn-primary, a.btn-secondary { text-decoration: none; display: inline-block; }
 
   @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .hero { padding: 80px 24px 100px; }
+    .hero-name { letter-spacing: -2px; }
+    .hero-sub { font-size: 14px; }
+
+    .metrics { padding: 70px 24px; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); max-width: 420px; }
+    .metric-value { font-size: 42px; }
+
+    .about { padding: 70px 24px; }
+    .about-text { font-size: 16px; line-height: 1.75; }
+
+    .projects { padding: 70px 24px; }
+    .projects-grid { grid-template-columns: 1fr; }
+
+    .footer { padding: 70px 24px 60px; }
+    .footer-name { font-size: 28px; }
+    .footer-links { flex-wrap: wrap; gap: 18px; }
+  }
+
+  @media (max-width: 420px) {
+    .metric-value { font-size: 36px; }
+    .metric-label { font-size: 8px; letter-spacing: 2px; }
+    .hero-buttons { gap: 10px; }
+    .btn-primary, .btn-secondary { padding: 12px 22px; }
+  }
 </style>
 </head>
 <body>
