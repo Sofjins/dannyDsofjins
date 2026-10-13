@@ -1,421 +1,184 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Danny Sofjins</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111111'/%3E%3Ctext x='50%25' y='50%25' dy='.06em' font-family='-apple-system,Helvetica Neue,Arial,sans-serif' font-size='30' font-weight='700' fill='%23ffffff' text-anchor='middle' dominant-baseline='central'%3EDS%3C/text%3E%3C/svg%3E">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: -apple-system, 'Helvetica Neue', sans-serif;
-    background: linear-gradient(180deg,
-      #ffffff 0%,
-      #f5f5f5 12%,
-      #ebebeb 24%,
-      #dcdcdc 36%,
-      #c8c8c8 48%,
-      #a8a8a8 58%,
-      #606060 70%,
-      #202020 82%,
-      #050505 100%
-    );
-    background-attachment: fixed;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  #particles {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  section { position: relative; z-index: 1; background: transparent; }
-
-  /* ── HERO (white bg area — dark text) ── */
-  .hero {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 60px 40px 80px;
-  }
-
-  .hero-tag {
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: #444;
-    margin-bottom: 20px;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 0.8s ease forwards 0.2s;
-  }
-
-  .hero-name {
-    font-size: clamp(56px, 9vw, 104px);
-    font-weight: 900;
-    color: #111;
-    letter-spacing: -4px;
-    line-height: 0.95;
-    opacity: 0;
-    transform: translateY(30px);
-    animation: fadeUp 0.9s ease forwards 0.4s;
-  }
-
-  .hero-sub {
-    font-size: 15px;
-    color: #555;
-    margin-top: 20px;
-    max-width: 460px;
-    line-height: 1.7;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 0.8s ease forwards 0.6s;
-  }
-
-  .hero-buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 36px;
-    flex-wrap: wrap;
-    justify-content: center;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 0.8s ease forwards 0.8s;
-  }
-
-  .btn-primary {
-    background: #111;
-    color: #fff;
-    padding: 13px 30px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
-  }
-  .btn-primary:hover { transform: translateY(-2px); opacity: 0.8; }
-
-  .btn-secondary {
-    background: rgba(255,255,255,0.6);
-    color: #111;
-    padding: 13px 30px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    border: 1.5px solid rgba(0,0,0,0.15);
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-  }
-  .btn-secondary:hover { transform: translateY(-2px); background: rgba(255,255,255,0.9); }
-
-  .scroll-arrow {
-    position: absolute;
-    bottom: 36px;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    animation: fadeUp 0.8s ease forwards 1.1s;
-  }
-  .scroll-arrow svg { animation: arrowBounce 1.6s ease-in-out infinite; display: block; }
-  @keyframes arrowBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(9px); }
-  }
-
-  /* ── METRICS (mid-light area — dark text) ── */
-  .metrics { padding: 100px 60px; }
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    max-width: 860px;
-    margin: 0 auto;
-  }
-  .metric-item {
-    text-align: center;
-    padding: 20px 10px;
-    opacity: 0;
-    transform: translateY(36px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  .metric-item.visible { opacity: 1; transform: translateY(0); }
-  .metric-value { font-size: 52px; font-weight: 900; color: #111; letter-spacing: -2px; line-height: 1; }
-  .metric-label { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: #555; margin-top: 8px; }
-
-  /* ── ABOUT (frosted panel — dark text) ── */
-  .about { padding: 100px 60px; }
-  .about-inner {
-    max-width: 680px;
-    margin: 0 auto;
-  }
-
-  .section-label {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #111;
-    margin-bottom: 28px;
-    opacity: 0;
-    transform: translateX(-16px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-  .section-label.visible { opacity: 1; transform: translateX(0); }
-
-  .about-text {
-    font-size: 17px;
-    line-height: 1.85;
-    color: #111;
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s ease 0.15s, transform 0.7s ease 0.15s;
-  }
-  .about-text.visible { opacity: 1; transform: translateY(0); }
-
-  /* ── PROJECTS (frosted cards — dark text) ── */
-  .projects { padding: 100px 60px; }
-  .projects-inner { max-width: 860px; margin: 0 auto; }
-  .projects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
-
-  .project-card {
-    background: transparent;
-    border-radius: 14px;
-    padding: 28px;
-    border: 1px solid rgba(0,0,0,0.15);
-    cursor: pointer;
-    opacity: 0;
-    transform: translateY(36px) scale(0.98);
-    transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s;
-  }
-  .project-card.visible { opacity: 1; transform: translateY(0) scale(1); }
-  .project-card:hover { border-color: rgba(0,0,0,0.35); transform: translateY(-4px) scale(1) !important; }
-
-  .project-name { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 8px; }
-  .project-desc { font-size: 13px; color: #222; line-height: 1.6; margin-bottom: 16px; }
-  .project-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag {
-    background: rgba(0,0,0,0.07);
-    color: #222;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 10px;
-    border: 1px solid rgba(0,0,0,0.12);
-  }
-
-  .placeholder-card {
-    background: transparent;
-    border: 2px dashed rgba(0,0,0,0.15);
-    border-radius: 14px;
-    padding: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    min-height: 160px;
-    opacity: 0;
-    transform: translateY(36px);
-    transition: opacity 0.6s ease 0.25s, transform 0.6s ease 0.25s;
-  }
-  .placeholder-card.visible { opacity: 1; transform: translateY(0); }
-  .placeholder-text { font-size: 13px; color: rgba(0,0,0,0.3); font-style: italic; }
-
-  /* ── FOOTER (black area — white text) ── */
-  .footer { padding: 100px 60px 80px; text-align: center; }
-  .footer-name {
-    font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 10px;
-    opacity: 0; transform: translateY(20px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-  .footer-name.visible { opacity: 1; transform: translateY(0); }
-  .footer-contact { font-size: 13px; color: rgba(255,255,255,0.45); opacity: 0; transition: opacity 0.6s ease 0.2s; }
-  .footer-contact.visible { opacity: 1; }
-  .footer-links {
-    display: flex; gap: 24px; justify-content: center; margin-top: 28px;
-    opacity: 0; transform: translateY(10px);
-    transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s;
-  }
-  .footer-links.visible { opacity: 1; transform: translateY(0); }
-  .footer-link { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35); cursor: pointer; transition: color 0.2s; text-decoration: none; }
-  .footer-link:hover { color: #fff; }
-  a.btn-primary, a.btn-secondary { text-decoration: none; display: inline-block; }
-
-  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .hero { padding: 80px 24px 100px; }
-    .hero-name { letter-spacing: -2px; }
-    .hero-sub { font-size: 14px; }
-
-    .metrics { padding: 70px 24px; }
-    .metrics-grid { grid-template-columns: repeat(2, 1fr); max-width: 420px; }
-    .metric-value { font-size: 42px; }
-
-    .about { padding: 70px 24px; }
-    .about-text { font-size: 16px; line-height: 1.75; }
-
-    .projects { padding: 70px 24px; }
-    .projects-grid { grid-template-columns: 1fr; }
-
-    .footer { padding: 70px 24px 60px; }
-    .footer-name { font-size: 28px; }
-    .footer-links { flex-wrap: wrap; gap: 18px; }
-  }
-
-  @media (max-width: 420px) {
-    .metric-value { font-size: 36px; }
-    .metric-label { font-size: 8px; letter-spacing: 2px; }
-    .hero-buttons { gap: 10px; }
-    .btn-primary, .btn-secondary { padding: 12px 22px; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0c12">
+  <meta name="description" content="Danny Sofjins. One curious mind, two unlikely worlds. Explore close-up magic and software engineering.">
+  <title>Danny Sofjins — Making the Impossible</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c12'/%3E%3Cpath d='M16 48V16h12c10 0 17 7 17 16s-7 16-17 16H16zm10-8h2c5 0 9-3 9-8s-4-8-9-8h-2v16z' fill='%23f5f0e9'/%3E%3Ccircle cx='49' cy='16' r='5' fill='%23bca4ff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
 </head>
-<body>
+<body data-world="gateway">
+  <canvas id="ambient-canvas" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <div id="wipe" class="wipe" aria-hidden="true"><span class="wipe__line"></span></div>
 
-<canvas id="particles"></canvas>
+  <header class="site-header">
+    <a class="brand" href="#/" aria-label="Danny Sofjins — Home">
+      <span class="brand__mark" aria-hidden="true">D<span>✳</span></span>
+      <span class="brand__name">DANNY<br>SOFJINS</span>
+    </a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a class="nav-link" data-section="gateway" href="#/">Gateway</a>
+      <a class="nav-link" data-section="magic" href="#/magic">Magic</a>
+      <a class="nav-link" data-section="software" href="#/software">Software</a>
+    </nav>
+    <button type="button" class="header-contact" data-contact="general"><span class="status-dot"></span> LET'S TALK <span aria-hidden="true">↗</span></button>
+  </header>
 
-<section class="hero">
-  <div class="hero-tag">Engineer · Founder · Magician</div>
-  <div class="hero-name">Danny<br>Sofjins</div>
-  <div class="hero-sub">Building payment infrastructure at GoCardless. Relocating to Prague, September 2026.</div>
-  <div class="hero-buttons">
-    <a class="btn-primary" href="CV_Daniils_Sofjins_SDE_2026.pdf" download>Download CV</a>
-    <a class="btn-secondary" href="https://github.com/Sofjins" target="_blank" rel="noopener">GitHub</a>
-    <a class="btn-secondary" href="https://www.linkedin.com/in/danny-sofjins-027822a2/" target="_blank" rel="noopener">LinkedIn</a>
-  </div>
-  <div class="scroll-arrow">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
-  </div>
-</section>
-
-<section class="metrics">
-  <div class="metrics-grid">
-    <div class="metric-item"><div class="metric-value">100k+</div><div class="metric-label">Accounts migrated</div></div>
-    <div class="metric-item"><div class="metric-value">92%</div><div class="metric-label">Failures cut</div></div>
-    <div class="metric-item"><div class="metric-value">248</div><div class="metric-label">PRs merged</div></div>
-    <div class="metric-item"><div class="metric-value">141</div><div class="metric-label">Bank integrations</div></div>
-    <div class="metric-item"><div class="metric-value">6</div><div class="metric-label">Payment schemes</div></div>
-    <div class="metric-item"><div class="metric-value">6</div><div class="metric-label">Countries</div></div>
-    <div class="metric-item"><div class="metric-value">218+</div><div class="metric-label">Founder commits</div></div>
-    <div class="metric-item"><div class="metric-value">3</div><div class="metric-label">Languages</div></div>
-  </div>
-</section>
-
-<section class="about">
-  <div class="about-inner">
-    <div class="section-label">About</div>
-    <div class="about-text">
-      Software engineer at GoCardless for 3 years, building payment infrastructure across 6 countries. Led a migration of 100k+ accounts, built 41 bank integrations from scratch, maintained 100 more, and shipped across SEPA, ACH, Faster Payments and three other schemes.<br><br>
-      Outside of GoCardless I founded Realm of The Lost Fool, an AR life-gamification game. Sole engineer, managed a UI/UX and game designer, built the full backend on Rails 8, PostgreSQL, Redis, WebSockets and OpenAI GPT. Also a performing magician of 10+ years and co-founder of a tricks school with 40+ students.
-    </div>
-  </div>
-</section>
-
-<section class="projects">
-  <div class="projects-inner">
-    <div class="section-label">Projects</div>
-    <div class="projects-grid">
-      <a class="project-card" href="https://gocardless.com" target="_blank" rel="noopener" style="text-decoration:none">
-        <div class="project-name">GoCardless</div>
-        <div class="project-desc">Payment infrastructure across Direct Debit and Open Banking schemes in 6 countries.</div>
-        <div class="project-tags">
-          <span class="tag">Ruby on Rails</span><span class="tag">Open Banking</span><span class="tag">SEPA</span><span class="tag">gRPC</span>
+  <main id="page-root">
+    <!-- ===== GATEWAY ===== -->
+    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-labelledby="gateway-title">
+      <div class="page-frame gateway-frame">
+        <div class="gateway-intro micro-row">
+          <span><span class="tiny-star">✳</span> A CURIOUS CORNER OF THE INTERNET</span>
+          <span class="micro-row__right">001 / INFINITE POSSIBILITIES</span>
         </div>
-      </a>
-      <a class="project-card" href="https://heroku-under-world-78701b220868.herokuapp.com/admin" target="_blank" rel="noopener" style="text-decoration:none;transition-delay:0.1s">
-        <div class="project-name">Realm of The Lost Fool</div>
-        <div class="project-desc">AR life-gamification MMORPG. Pokemon Go meets World of Warcraft in real life.</div>
-        <div class="project-tags">
-          <span class="tag">Rails 8</span><span class="tag">OpenAI GPT</span><span class="tag">WebSockets</span><span class="tag">Docker</span>
+        <div class="gateway-hero">
+          <div class="gateway-copy">
+            <p class="eyebrow">HEY, I'M DANNY. WELCOME TO MY WORLD.</p>
+            <h1 id="gateway-title">I MAKE THE<br><span class="headline-accent">impossible<span class="accent-point">.</span></span></h1>
+            <div class="gateway-description">
+              <p>One part magician. One part software engineer.<br>Fully committed to making things that make you <em>feel something.</em></p>
+              <span class="handwritten" aria-hidden="true">pick a reality ↘</span>
+            </div>
+          </div>
         </div>
-      </a>
+
+        <div class="world-grid" aria-label="Choose a world">
+          <a class="world-door world-door--magic" href="#/magic" data-door="magic">
+            <div class="door-bloom" aria-hidden="true"></div>
+            <div class="world-door__top"><span>01 <span class="divider-slash">/</span> THE UNEXPLAINABLE</span><span class="door-symbol">✳</span></div>
+            <div class="magic-object" aria-hidden="true">
+              <span class="magic-orbit magic-orbit--one"></span>
+              <span class="magic-orbit magic-orbit--two"></span>
+              <span class="floating-card floating-card--back"></span>
+              <span class="floating-card floating-card--front"><b>A</b><i>✦</i><b>A</b></span>
+              <span class="card-dust card-dust--one">✦</span><span class="card-dust card-dust--two">·</span>
+            </div>
+            <div class="world-door__bottom">
+              <div><span class="door-kicker">WONDER IS THE POINT</span><h2>Magic<span class="door-period">.</span></h2><p>Let's bend the rules a little.</p></div>
+              <span class="door-arrow" aria-hidden="true">↗</span>
+            </div>
+          </a>
+
+          <div class="rift-mark" aria-hidden="true"><span>✦</span></div>
+
+          <a class="world-door world-door--software" href="#/software" data-door="software">
+            <div class="door-bloom" aria-hidden="true"></div>
+            <div class="world-door__top"><span>02 <span class="divider-slash">/</span> THE ENGINEERED</span><span class="door-symbol">⌘</span></div>
+            <div class="software-object" aria-hidden="true">
+              <span class="software-orbit"></span>
+              <span class="software-cube software-cube--rear"></span>
+              <span class="software-cube software-cube--front"><span class="cube-cross">+</span></span>
+              <span class="code-fleck code-fleck--one">{ }</span>
+              <span class="code-fleck code-fleck--two">01</span>
+            </div>
+            <div class="world-door__bottom">
+              <div><span class="door-kicker">IDEAS INTO REALITY</span><h2>Software<span class="door-period">.</span></h2><p>Things I build, and why I build them.</p></div>
+              <span class="door-arrow" aria-hidden="true">↗</span>
+            </div>
+          </a>
+        </div>
+        <div class="gateway-outro"><span>AN EXPERIMENT IN PERSONAL IDENTITY</span><span>PSST... TRY TOUCHING THINGS.</span><span>BUILT WITH CODE, NOT WANDS <span aria-hidden="true">✳</span></span></div>
+      </div>
+    </section>
+
+    <!-- ===== MAGIC ===== -->
+    <section id="page-magic" class="page page--magic" data-page="magic" aria-labelledby="magic-title" hidden>
+      <div class="page-frame">
+        <div class="world-topbar"><a href="#/" class="back-link"><span aria-hidden="true">←</span> BACK TO THE GATEWAY</a><span class="world-number">WORLD 01 / MAGIC</span></div>
+        <section class="world-hero magic-hero">
+          <div class="world-hero__copy">
+            <p class="eyebrow eyebrow--magic">A LITTLE WONDER GOES A LONG WAY <span aria-hidden="true">✳</span></p>
+            <h1 id="magic-title">REALITY<br>IS <span class="serif-em">overrated.</span></h1>
+            <p class="world-lede">I'm Danny. I believe the best kind of magic doesn't happen in your hands. It happens in someone's eyes, the moment everything they know stops making sense.</p>
+            <div class="button-row"><button class="button button--light" data-contact="booking">BOOK A PERFORMANCE <span>↗</span></button><a href="#/magic/school" class="button button--quiet">DISCOVER THE SCHOOL <span>↘</span></a></div>
+            <div class="magic-hidden-card" id="magic-hidden-card" aria-live="polite" hidden><span class="mini-card">✦</span><span>Well, would you look at that.<br><button type="button" id="return-card" class="text-button">Bring it back ↗</button></span></div>
+          </div>
+          <div class="illusion-module" aria-label="Interactive magic trick">
+            <div class="illusion-module__label"><span>EXPERIMENT NO. 001</span><span>INTERACTIVE MAGIC</span></div>
+            <div class="illusion-stage">
+              <span class="illusion-halo" aria-hidden="true"></span>
+              <span class="illusion-ring illusion-ring--a" aria-hidden="true"></span>
+              <span class="illusion-ring illusion-ring--b" aria-hidden="true"></span>
+              <button id="vanishing-card" type="button" class="illusion-card" aria-label="Make the playing card disappear"><span class="illusion-card__corner">A <span>♦</span></span><span class="illusion-card__center">♦</span><span class="illusion-card__corner illusion-card__corner--bottom">A <span>♦</span></span></button>
+              <span class="illusion-spark illusion-spark--1" aria-hidden="true">✦</span><span class="illusion-spark illusion-spark--2" aria-hidden="true">✧</span>
+              <div class="illusion-message" id="illusion-message" aria-live="polite">A little something for you.</div>
+            </div>
+            <button id="magic-trigger" type="button" class="illusion-trigger">MAKE IT DISAPPEAR <span aria-hidden="true">↗</span></button>
+          </div>
+        </section>
+
+        <div class="line-break"><span>A MOMENT YOU DON'T FORGET</span><span aria-hidden="true">✦ ✦ ✦</span></div>
+        <section class="content-section offers" id="magic-performances">
+          <div class="section-heading"><div><p class="eyebrow eyebrow--magic">01 / EXPERIENCES</p><h2>For the moments<br>that <em>matter.</em></h2></div><p>Unexpected magic has a way of bringing people together. Let's create one of those moments for your guests.</p></div>
+          <div class="offer-grid">
+            <article class="offer-card"><span class="offer-card__number">01</span><span class="offer-glyph" aria-hidden="true">✧</span><h3>Private<br>gatherings</h3><p>Up-close moments for your favorite people.</p></article>
+            <article class="offer-card"><span class="offer-card__number">02</span><span class="offer-glyph" aria-hidden="true">◇</span><h3>Corporate<br>events</h3><p>Something unexpected to get everyone talking.</p></article>
+            <article class="offer-card"><span class="offer-card__number">03</span><span class="offer-glyph" aria-hidden="true">✳</span><h3>Special<br>occasions</h3><p>Make the atmosphere unforgettable.</p></article>
+          </div>
+          <div class="offer-bottom"><span>BASED IN PRAGUE · ENGLISH-SPEAKING PERFORMANCES</span><button type="button" class="underlined-action" data-contact="booking">TELL ME ABOUT YOUR EVENT <span>↗</span></button></div>
+        </section>
+
+        <section class="school-section" id="magic-school">
+          <div class="school-art" aria-hidden="true"><div class="school-rings"><span></span><span></span><span></span></div><span class="school-star">✶</span><span class="school-annotation">THE SECRET IS IN<br>THE WAY YOU LOOK.</span></div>
+          <div class="school-copy"><p class="eyebrow eyebrow--magic">02 / THE MAGIC SCHOOL</p><h2>Wonder is<br><em>learned.</em></h2><p>Magic isn't just tricks. It's curiosity, storytelling, confidence, and a different way to see the world. A place for people who want to learn the impossible.</p><div class="school-topics"><span>MISDIRECTION</span><span>STORYTELLING</span><span>PERFORMANCE</span></div><button type="button" class="button button--light" data-contact="school">ASK ABOUT THE SCHOOL <span>↗</span></button><p class="fineprint">Curriculum, dates and pricing will be added later.</p></div>
+        </section>
+
+        <section class="final-cta final-cta--magic"><p class="eyebrow">YOUR TURN TO MAKE SOMETHING HAPPEN</p><h2>Shall we create<br><em>some wonder?</em></h2><button class="button button--light" type="button" data-contact="booking">LET'S TALK MAGIC <span>↗</span></button></section>
+      </div>
+    </section>
+
+    <!-- ===== SOFTWARE ===== -->
+    <section id="page-software" class="page page--software" data-page="software" aria-labelledby="software-title" hidden>
+      <div class="page-frame">
+        <div class="world-topbar"><a href="#/" class="back-link"><span aria-hidden="true">←</span> BACK TO THE GATEWAY</a><span class="world-number">WORLD 02 / SOFTWARE</span></div>
+        <section class="world-hero software-hero">
+          <div class="world-hero__copy">
+            <p class="eyebrow eyebrow--software">THINK IT. BUILD IT. MAKE IT MATTER. <span aria-hidden="true">⌘</span></p>
+            <h1 id="software-title">IDEAS<br>MADE <span class="serif-em">real.</span></h1>
+            <p class="world-lede">I'm a software engineer who loves making ambitious ideas tangible — from web experiences to the systems running underneath them.</p>
+            <div class="button-row"><a href="#/software/projects" class="button button--bright">EXPLORE THE WORK <span>↘</span></a><button type="button" class="button button--quiet" data-contact="software">LET'S BUILD SOMETHING <span>↗</span></button></div>
+          </div>
+          <div class="engineering-module" aria-label="Decorative generative wireframe illustration"><span class="engineering-module__label">NOTHING IS IMPOSSIBLE. SOME THINGS JUST NEED DEBUGGING.</span><div class="engineering-grid"></div><div class="engineering-structure" aria-hidden="true"><div class="engineering-poly engineering-poly--one"></div><div class="engineering-poly engineering-poly--two"></div><div class="engineering-poly engineering-poly--three"></div><span class="engineering-core">⌘</span></div><span class="engineering-module__bottom">SYSTEM STATUS: <b>IMAGINING</b> <span class="pulse-dot"></span></span></div>
+        </section>
+        <div class="line-break line-break--software"><span>SELECTED PROJECTS</span><span>SCROLL TO EXPLORE ↓</span></div>
+        <section class="content-section projects-section" id="software-projects"><div class="section-heading"><div><p class="eyebrow eyebrow--software">01 / THE WORK</p><h2>Built with<br><em>intention.</em></h2></div><p>Three projects. Different problems, different personalities. Real links, with richer case studies and original images coming later.</p></div>
+          <div class="projects-grid">
+            <article class="project-card project-card--nikita">
+              <div class="project-visual project-visual--nikita" aria-label="Abstract typographic preview, not a website screenshot"><span class="preview-label">01 / PORTFOLIO EXPERIENCE</span><span class="nikita-display">N<span>.</span></span><span class="preview-footnote">PERSONAL / EDITORIAL / DIGITAL</span></div>
+              <div class="project-meta"><div><span class="project-number">01 / WEB PROJECT</span><h3>Nikita Galilejevs</h3><p>Personal web experience. Details and screenshots will be added.</p></div><a href="https://nikitagalilejevs.com/" target="_blank" rel="noopener noreferrer" class="project-link" aria-label="Visit Nikita Galilejevs website">↗</a></div>
+            </article>
+            <article class="project-card project-card--bakery">
+              <div class="project-visual project-visual--bakery" aria-label="Abstract bakery-inspired artwork, not a website screenshot"><span class="preview-label">02 / WEB PROJECT</span><div class="bread-art"><span class="bread-art__scoring"></span><span class="bread-art__scoring bread-art__scoring--two"></span><span class="bread-art__scoring bread-art__scoring--three"></span></div><span class="bakery-display">home bakery<span>®</span></span></div>
+              <div class="project-meta"><div><span class="project-number">02 / WEB PROJECT</span><h3>Home Bakery</h3><p>A bakery-inspired digital experience. Visual case study coming later.</p></div><a href="https://home-bakery.fyi/" target="_blank" rel="noopener noreferrer" class="project-link" aria-label="Visit Home Bakery website">↗</a></div>
+            </article>
+            <article class="project-card project-card--chess">
+              <div class="project-visual project-visual--chess" aria-label="Stylized chessboard artwork, not a website screenshot"><span class="preview-label">03 / WEB PROJECT</span><div class="chess-art" id="chess-art" aria-hidden="true"><div class="chess-board" id="chess-board"></div><span class="chess-art__glyph">♞</span></div><span class="preview-footnote">THINK / PLAY / IMPROVE</span></div>
+              <div class="project-meta"><div><span class="project-number">03 / SOFTWARE PROJECT</span><h3>ChessFeedback</h3><p>A chess-focused project. Product information will be verified later.</p></div><a href="https://chessfeedback.com/" target="_blank" rel="noopener noreferrer" class="project-link" aria-label="Visit ChessFeedback website">↗</a></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="engineer-section"><div><p class="eyebrow eyebrow--software">02 / BEHIND THE KEYBOARD</p><h2>Curious by<br><em>default.</em></h2></div><div class="engineer-copy"><p>My work spans payment infrastructure, product engineering, backend systems and interactive experiences. I like both the tricky technical problems and the small details that make something feel good to use.</p><div class="skill-tags"><span>BACKEND SYSTEMS</span><span>WEB EXPERIENCES</span><span>RUBY ON RAILS</span><span>PRODUCT THINKING</span></div><div class="engineer-links"><a href="CV_Daniils_Sofjins_SDE_2026.pdf" download>DOWNLOAD CV ↗</a><a href="https://github.com/Sofjins" target="_blank" rel="noopener noreferrer">GITHUB ↗</a><a href="https://www.linkedin.com/in/danny-sofjins-027822a2/" target="_blank" rel="noopener noreferrer">LINKEDIN ↗</a></div></div></section>
+        <section class="final-cta final-cta--software"><p class="eyebrow">AN IDEA ON YOUR MIND?</p><h2>Let's make it<br><em>exist.</em></h2><button class="button button--bright" type="button" data-contact="software">GET IN TOUCH <span>↗</span></button></section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span>© <span id="current-year">2026</span> DANNY SOFJINS</span><span>THIS SITE IS AN EXPERIMENT. SO AM I.</span><a href="mailto:daniils0sofjins@gmail.com" aria-label="Email Danny">SAY HELLO ↗</a></footer>
+
+  <dialog class="contact-dialog" id="contact-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-inner"><div class="dialog-top"><span class="eyebrow">A MESSAGE FROM YOUR REALITY TO MINE</span><button class="dialog-close" type="button" id="dialog-close" aria-label="Close form">✕</button></div><h2 id="dialog-title">Let's make<br><em>something happen.</em></h2><p id="dialog-intro">Tell me a little about your idea. I'll open a ready-to-send email on your device.</p>
+      <form id="contact-form"><label>Your name <input name="name" type="text" autocomplete="name" placeholder="What should I call you?" required maxlength="100"></label><label>Your email <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required maxlength="200"></label><label id="subject-label">What is this about?<select name="subject" id="contact-subject"><option>Magic performance</option><option>Magic school</option><option>Software project</option><option>Something else entirely</option></select></label><label>Tell me more <textarea name="message" placeholder="The more curious the better..." rows="3" required maxlength="2000"></textarea></label><button type="submit" class="button button--bright dialog-submit">OPEN EMAIL DRAFT <span>↗</span></button><p class="form-note">Prototype mode: no information is stored or sent by this website. Your email app will open with a drafted message.</p></form>
     </div>
-  </div>
-</section>
-
-<section class="footer">
-  <div class="footer-name">Let's work together.</div>
-  <div class="footer-contact">daniils0sofjins@gmail.com · Prague from Sept 2026</div>
-  <div class="footer-links">
-    <a class="footer-link" href="https://github.com/Sofjins" target="_blank" rel="noopener">GitHub</a>
-    <a class="footer-link" href="https://www.linkedin.com/in/danny-sofjins-027822a2/" target="_blank" rel="noopener">LinkedIn</a>
-    <a class="footer-link" href="CV_Daniils_Sofjins_SDE_2026.pdf" download>Download CV</a>
-  </div>
-</section>
-
-<script>
-const canvas = document.getElementById('particles');
-const ctx = canvas.getContext('2d');
-let W, H;
-function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-resize();
-window.addEventListener('resize', resize);
-
-const particles = Array.from({ length: 70 }, () => ({
-  x: Math.random() * window.innerWidth,
-  y: Math.random() * window.innerHeight,
-  r: Math.random() * 1.3 + 0.25,
-  speed: Math.random() * 0.22 + 0.06,
-  drift: (Math.random() - 0.5) * 0.14,
-  opacity: Math.random() * 0.5 + 0.35,
-}));
-
-function reset(p) {
-  p.x = Math.random() * W; p.y = H + Math.random() * 40;
-  p.r = Math.random() * 1.3 + 0.25;
-  p.speed = Math.random() * 0.22 + 0.06;
-  p.drift = (Math.random() - 0.5) * 0.14;
-  p.opacity = Math.random() * 0.5 + 0.35;
-}
-
-function draw() {
-  ctx.clearRect(0, 0, W, H);
-  particles.forEach(p => {
-    const t = Math.max(0, Math.min(1, 1 - p.y / H));
-    // bottom: bright white (245) rising through mid-gray, arriving near-black (18) at top
-    const g = Math.round(245 - t * 227);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${g},${g},${g},${p.opacity})`;
-    ctx.fill();
-    p.y -= p.speed;
-    p.x += p.drift;
-    if (p.y + p.r < 0) reset(p);
-  });
-  requestAnimationFrame(draw);
-}
-draw();
-
-// Parallax — very slow
-const sections = document.querySelectorAll('section');
-const depths = [0, 0.006, 0.01, 0.008, 0.004];
-window.addEventListener('scroll', () => {
-  const sy = window.scrollY;
-  sections.forEach((s, i) => { s.style.transform = `translateY(${sy * depths[i]}px)`; });
-}, { passive: true });
-
-const io = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('visible');
-    } else {
-      e.target.classList.remove('visible');
-    }
-  });
-}, { threshold: 0.12 });
-
-document.querySelectorAll(
-  '.metric-item, .section-label, .about-text, .project-card, .placeholder-card, .footer-name, .footer-contact, .footer-links'
-).forEach(el => io.observe(el));
-</script>
+  </dialog>
+  <noscript><div class="noscript">This interactive prototype needs JavaScript for page navigation and the miniature magic trick. The project links and contact address are still available in the source HTML.</div></noscript>
 </body>
 </html>
