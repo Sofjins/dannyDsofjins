@@ -1,35 +1,31 @@
-# Danny Sofjins — Rift + Typography Prototype
+# Danny Sofjins — Living Street Gateway
 
-A **lightweight, interactive design prototype** for [dannysofjins.xyz](https://dannysofjins.xyz/).
+A lightweight interactive landing for [dannysofjins.xyz](https://dannysofjins.xyz/). The approved, straight-on night-street artwork is the foundation: **Magic Shop** on the left, **Software Hub** on the right.
 
-The website has three connected worlds:
+## What is interactive
 
-- **Gateway** — two clickable, animated portals.
-- **Magic** — interactive disappearing-card moment, performances, school teaser and booking enquiry.
-- **Software** — three external project links, engineering profile and downloadable CV.
+- Click either door to zoom into its world; existing Magic and Software pages remain available through hash URLs and browser Back.
+- Three.js draws low-cost depth-aware rain and atmospheric particles over the street (loaded progressively).
+- Two Chinese/Japanese-style lanterns sway **only during occasional wind gusts** or gentle pointer interaction.
+- Independent candlelight glows and small animated flames, plus intermittent cyan/magenta neon flicker and wet-road reflections.
+- Animated black cat with walking / drinking / licking / sitting states. Hover / focus for a purr caption, click for an optional generated purr sound. A small bowl sits between the shops.
+- Dimmed upper floors and more private/darker Software Hub windows, and a small `COFFEE · WORKING 24/7` sign.
+- On narrow screens, drag horizontally to inspect the street. The two always-visible links at the bottom go directly to either page.
 
-## Try the prototype
+## Files
 
-Open `index.html` in a browser. Everything important works without a build step. For a local server, run `python3 -m http.server 8080` in this folder and visit `http://localhost:8080`.
+- `index.html` — HTML scene, two accessible clickable door regions, existing inner pages.
+- `assets/site.css` — page and world styles plus responsive street staging.
+- `assets/site.js` — previously implemented Magic / Software pages and routing.
+- `assets/gateway.js` — lantern, cat, Three.js rain, candle and neon behaviors, mobile panning, entrance zoom.
+- `assets/street-night.webp` — scene art with isolated moving elements removed, compressed for fast load.
+- `assets/street-cat.png`, `assets/lantern-left.png`, `assets/lantern-right.png` — moving cutout layers.
+- `CV_Daniils_Sofjins_SDE_2026.pdf` — existing CV, preserved.
 
-Navigation uses **hash links** (`#/magic`, `#/software`) for the prototype so direct links and Back/Forward work even on static hosting or local files. We can switch to clean URL routing when choosing final deployment/rewrites.
+## How to run
 
-## Implementation
+This prototype is static HTML + CSS + JavaScript. Serve the directory from any static server (`python -m http.server 8000`) and open it in a browser. `#`, `#/magic`, and `#/software` work without special routing configuration. Three.js is imported from jsDelivr if WebGL is available; a static artwork fallback works without WebGL.
 
-- Vanilla HTML, CSS and JavaScript (no React, no framework, no npm dependencies).
-- Three.js is a **progressive enhancement**, dynamically imported from jsDelivr only to render a tiny star field and rift line. If WebGL or the CDN is unavailable, the site stays fully usable.
-- No photography, 3D assets, image generation, GPU physics or heavy bundles.
-- Card trick is a simple CSS/JS illusion; visual previews for projects are **abstract placeholders**, not actual screenshots.
-- Contact form validates input and opens a prefilled `mailto:` draft; it does **not** send or store data. We'll wire a proper booking backend later.
-- Motion reduced for `prefers-reduced-motion` and simplified on mobile.
+## Deliberately postponed
 
-## Assets to supply later
-
-- Performance photographs and short videos, booking details, magic school pricing/schedule.
-- Verified project descriptions, real screenshots and scope of your involvement.
-- Instagram and other social accounts.
-- Custom domain hosting configuration, booking/lead collection and analytics.
-
-## Original site
-
-The prototype replaces `index.html` **on a design branch only**. The existing CV PDF remains available; the main branch and live website are not changed.
+Real 3D cat rigging, dynamic interior scenes, custom shader lighting and physical rain simulation, booking backend and CMS. The existing Magic and Software content is unchanged. This is a gateway iteration for visual feedback.

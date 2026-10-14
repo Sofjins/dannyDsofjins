@@ -72,7 +72,7 @@
         window.setTimeout(() => page.classList.remove('is-revealed'), 650);
       }
     };
-    if (isInitial || prefersReducedMotion.matches) { swap(); return; }
+    if (isInitial || prefersReducedMotion.matches || window.__fromStreetGateway) { window.__fromStreetGateway = false; swap(); return; }
     wipe.classList.remove('is-entering');
     void wipe.offsetWidth; // restart the one-time transition
     wipe.classList.add('is-entering');
@@ -259,5 +259,6 @@
       console.info('Three.js ambience unavailable; using static background.');
     }
   }
-  initAmbient();
+  // Gateway has a dedicated lightweight Three.js weather scene.
+  // Interior pages retain their CSS atmospheric treatments.
 })();

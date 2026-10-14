@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+  <script src="assets/gateway.js" defer></script>
 </head>
 <body data-world="gateway">
   <canvas id="ambient-canvas" aria-hidden="true"></canvas>
@@ -32,60 +33,39 @@
   </header>
 
   <main id="page-root">
-    <!-- ===== GATEWAY ===== -->
-    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-labelledby="gateway-title">
-      <div class="page-frame gateway-frame">
-        <div class="gateway-intro micro-row">
-          <span><span class="tiny-star">✳</span> A CURIOUS CORNER OF THE INTERNET</span>
-          <span class="micro-row__right">001 / INFINITE POSSIBILITIES</span>
+    <!-- ===== GATEWAY: LIVING STREET ===== -->
+    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-label="Choose a door to enter Magic or Software">
+      <div class="street-viewport" id="street-viewport">
+        <div class="street-world" id="street-world">
+          <img class="street-background" src="assets/street-night.webp" alt="Two nighttime storefronts on a rainy Japanese-inspired street: warm Magic Shop and neon Software Hub." fetchpriority="high" decoding="async">
+          <div class="street-vignette" aria-hidden="true"></div>
+          <div class="street-mist street-mist--left" aria-hidden="true"></div>
+          <div class="street-mist street-mist--right" aria-hidden="true"></div>
+          <div class="light-source light-source--magic-window" data-light="candle" aria-hidden="true"></div>
+          <div class="light-source light-source--magic-door" data-light="candle" aria-hidden="true"></div>
+          <div class="light-source light-source--candle-low" data-light="candle" aria-hidden="true"></div>
+          <div class="light-source light-source--neon-cyan" data-light="neon" aria-hidden="true"></div>
+          <div class="light-source light-source--neon-pink" data-light="neon" aria-hidden="true"></div>
+          <div class="light-source light-source--pavement" data-light="reflection" aria-hidden="true"></div>
+          <div class="flame flame--a" aria-hidden="true"></div><div class="flame flame--b" aria-hidden="true"></div><div class="flame flame--c" aria-hidden="true"></div><div class="flame flame--d" aria-hidden="true"></div>
+          <div class="lantern lantern--left" data-lantern="left" aria-hidden="true"><img src="assets/lantern-left.png" alt=""></div>
+          <div class="lantern lantern--right" data-lantern="right" aria-hidden="true"><img src="assets/lantern-right.png" alt=""></div>
+          <div class="coffee-neon" aria-hidden="true"><span class="coffee-icon">♨</span><span class="coffee-word">COFFEE</span><small>WORKING 24/7</small></div>
+          <div class="cat-bowl" aria-hidden="true"><span class="cat-bowl__liquid"></span></div>
+          <button type="button" class="street-cat" id="street-cat" aria-label="Погладить кота" title="Погладить кота">
+            <img class="street-cat__image" src="assets/street-cat.png" alt="" draggable="false">
+            <span class="street-cat__speech" aria-live="polite">mrrr~ ♡</span>
+          </button>
+          <a href="#/magic" class="shop-hit shop-hit--magic" aria-label="Открыть дверь Magic Shop" data-street-door="magic"><span class="shop-hit__outline"></span><span class="shop-hit__label">ENTER THE MAGIC <span aria-hidden="true">↗</span></span></a>
+          <a href="#/software" class="shop-hit shop-hit--software" aria-label="Открыть дверь Software Hub" data-street-door="software"><span class="shop-hit__outline"></span><span class="shop-hit__label">ENTER THE HUB <span aria-hidden="true">↗</span></span></a>
+          <canvas id="street-weather" class="street-weather" aria-hidden="true"></canvas>
         </div>
-        <div class="gateway-hero">
-          <div class="gateway-copy">
-            <p class="eyebrow">HEY, I'M DANNY. WELCOME TO MY WORLD.</p>
-            <h1 id="gateway-title">I MAKE THE<br><span class="headline-accent">impossible<span class="accent-point">.</span></span></h1>
-            <div class="gateway-description">
-              <p>One part magician. One part software engineer.<br>Fully committed to making things that make you <em>feel something.</em></p>
-              <span class="handwritten" aria-hidden="true">pick a reality ↘</span>
-            </div>
-          </div>
+        <div class="street-hud" aria-hidden="true"><span>A DIFFERENT KIND OF NEIGHBORHOOD</span><span>PRAGUE · AFTER DARK</span></div>
+        <div class="street-bottom-nav" aria-label="Выберите дверь">
+          <a href="#/magic" data-street-door="magic"><span class="bottom-nav__dot bottom-nav__dot--warm"></span> MAGIC SHOP <span aria-hidden="true">↗</span></a>
+          <a href="#/software" data-street-door="software"><span class="bottom-nav__dot bottom-nav__dot--cool"></span> SOFTWARE HUB <span aria-hidden="true">↗</span></a>
         </div>
-
-        <div class="world-grid" aria-label="Choose a world">
-          <a class="world-door world-door--magic" href="#/magic" data-door="magic">
-            <div class="door-bloom" aria-hidden="true"></div>
-            <div class="world-door__top"><span>01 <span class="divider-slash">/</span> THE UNEXPLAINABLE</span><span class="door-symbol">✳</span></div>
-            <div class="magic-object" aria-hidden="true">
-              <span class="magic-orbit magic-orbit--one"></span>
-              <span class="magic-orbit magic-orbit--two"></span>
-              <span class="floating-card floating-card--back"></span>
-              <span class="floating-card floating-card--front"><b>A</b><i>✦</i><b>A</b></span>
-              <span class="card-dust card-dust--one">✦</span><span class="card-dust card-dust--two">·</span>
-            </div>
-            <div class="world-door__bottom">
-              <div><span class="door-kicker">WONDER IS THE POINT</span><h2>Magic<span class="door-period">.</span></h2><p>Let's bend the rules a little.</p></div>
-              <span class="door-arrow" aria-hidden="true">↗</span>
-            </div>
-          </a>
-
-          <div class="rift-mark" aria-hidden="true"><span>✦</span></div>
-
-          <a class="world-door world-door--software" href="#/software" data-door="software">
-            <div class="door-bloom" aria-hidden="true"></div>
-            <div class="world-door__top"><span>02 <span class="divider-slash">/</span> THE ENGINEERED</span><span class="door-symbol">⌘</span></div>
-            <div class="software-object" aria-hidden="true">
-              <span class="software-orbit"></span>
-              <span class="software-cube software-cube--rear"></span>
-              <span class="software-cube software-cube--front"><span class="cube-cross">+</span></span>
-              <span class="code-fleck code-fleck--one">{ }</span>
-              <span class="code-fleck code-fleck--two">01</span>
-            </div>
-            <div class="world-door__bottom">
-              <div><span class="door-kicker">IDEAS INTO REALITY</span><h2>Software<span class="door-period">.</span></h2><p>Things I build, and why I build them.</p></div>
-              <span class="door-arrow" aria-hidden="true">↗</span>
-            </div>
-          </a>
-        </div>
-        <div class="gateway-outro"><span>AN EXPERIMENT IN PERSONAL IDENTITY</span><span>PSST... TRY TOUCHING THINGS.</span><span>BUILT WITH CODE, NOT WANDS <span aria-hidden="true">✳</span></span></div>
+        <div class="street-hint" id="street-hint">TAP A DOOR TO STEP INSIDE <span>↗</span></div>
       </div>
     </section>
 
