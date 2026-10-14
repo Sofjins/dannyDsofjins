@@ -4,7 +4,7 @@ import {box,sphere,cylinder,tube,mat,point,rnd} from './primitives.js';
 // Real articulated stylized 3D cat — no billboards or sprite sheets.
 export function createCat(scene){
   const root=new THREE.Group();root.position.set(.0,.0,3.7);scene.add(root);
-  const dark=mat('#090c13',.91),coat=mat('#151a24',.94),nose=mat('#93686b',.95),eye=mat('#d3b95f',.54);
+  const dark=mat('#141a22',.91),coat=mat('#303946',.86),nose=mat('#93686b',.95),eye=mat('#d3b95f',.54);
   const torso=sphere(root,.37,0,.52,0,coat,14);torso.scale.set(1.45,.79,.67);
   const chest=sphere(root,.27,.40,.49,0,dark,12);chest.scale.set(.75,1,.68);
   const head=new THREE.Group();head.position.set(.57,.81,0);root.add(head);

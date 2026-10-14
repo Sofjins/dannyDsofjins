@@ -2,6 +2,7 @@ import * as THREE from './three.js';
 import {buildMagic,buildSoftware} from './shops.js';
 import {buildEnvironment,makeRain} from './environment.js';
 import {createCat} from './cat.js';
+import {applySurfaceMaterials,detailMagic,detailSoftware,detailStreet} from './art-pass.js';
 
 const root=document.getElementById('gateway-experience');
 const canvas=document.getElementById('gateway-webgl');
@@ -34,11 +35,13 @@ function sceneInit(){
  renderer=new THREE.WebGLRenderer({canvas,antialias:!mobile.matches,alpha:false,powerPreference:'high-performance'});
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=1.45;
+ renderer.toneMappingExposure=2.04;
  scene=new THREE.Scene();
+ applySurfaceMaterials();
  camera=new THREE.PerspectiveCamera(30,1,.1,90);
  buildEnvironment(scene,{mobile:mobile.matches});
- const magic=buildMagic(scene);const software=buildSoftware(scene);
+ const magic=detailMagic(buildMagic(scene));const software=detailSoftware(buildSoftware(scene));
+ detailStreet(scene);
  shops={magic,software};
  cat=createCat(scene);
  weather=makeRain(scene,{count:mobile.matches?115:230});

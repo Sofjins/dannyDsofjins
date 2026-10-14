@@ -62,10 +62,10 @@ export function buildEnvironment(scene,{mobile=false}={}){
   groundLight(scene,4.4,4.6,4.3,10,'#2266b7',.86);
   groundLight(scene,8.1,4.2,2.8,8,'#882373',.56);
   // Warm amber and cold electric light reach the pavement rather than existing as screen glow overlays.
-  const hemi=new THREE.HemisphereLight('#4e6190','#1a1516',1.75);scene.add(hemi);
-  const moon=new THREE.DirectionalLight('#62729c',1.05);moon.position.set(-4,11,9);scene.add(moon);
-  const fill=point(scene,'#225aa5',1.7,5.2,5.2,4.6,12.0);
-  const amber=point(scene,'#ff8c3d',1.7,-6.1,4.5,2.5,11);
+  const hemi=new THREE.HemisphereLight('#a1aec3','#4e342d',2.9);scene.add(hemi);
+  const moon=new THREE.DirectionalLight('#d6dae4',1.75);moon.position.set(-4,11,9);scene.add(moon);
+  const fill=point(scene,'#398dd9',2.35,5.2,5.2,4.6,12.0);
+  const amber=point(scene,'#ffad5c',3.1,-6.1,4.5,2.5,11);
   return {hemi,moon,fill,amber};
 }
 

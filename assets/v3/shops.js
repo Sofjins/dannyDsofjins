@@ -101,8 +101,9 @@ export function buildMagic(scene){
   // Main wooden shop sign, under the eaves.
   streetSign(g,'Magic Shop',-5.78,6.70,-.97,5.5,.88,{wood:true,size:126});
   // Left showcase: physical room and shelves behind glass.
-  box(g,3.66,3.67,.30,-7.22,2.66,-1.55,materials.woodDark);
-  box(g,3.32,3.28,.02,-7.22,2.71,-1.37,new THREE.MeshBasicMaterial({color:'#27150d'}));
+  // Leave the showcase open so visitors can see real shelves and candlelight.
+  box(g,3.66,.15,.30,-7.22,4.50,-1.55,materials.woodDark);
+  box(g,3.66,.16,.30,-7.22,.83,-1.55,materials.woodDark);
   const room=new THREE.Group();room.position.set(-7.15,0,-1.28);g.add(room);
   box(room,3.10,3.2,.10,0,2.65,-2.1,materials.woodDark);
   shelf(room,-.08,1.55,-1.85,2.7);shelf(room,.04,2.5,-1.86,2.65);shelf(room,-.02,3.48,-1.85,2.55);

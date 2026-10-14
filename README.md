@@ -26,7 +26,8 @@ assets/site.js            existing accessible hash router, booking modal, Magic 
 assets/v3/three.js        pinned CDN loader for Three.js 0.179.1
 assets/v3/primitives.js   3D mesh/material/text helpers
 assets/v3/environment.js  genuine 3D paving, walls, neon reflections, rain, lights
-assets/v3/shops.js        genuine 3D shops, shop interiors, doors, lanterns, signs
+assets/v3/shops.js        genuine 3D shops, interior openings, doors, lanterns, signs
+assets/v3/art-pass.js     procedural surface maps, architecture details, props, warm window lighting
 assets/v3/cat.js          separate articulated 3D cat + bowl; animation states
 assets/v3/main.js         camera, pointer raycasting, transitions, updates, responsive motion
 ```
@@ -43,6 +44,9 @@ assets/v3/main.js         camera, pointer raycasting, transitions, updates, resp
 
 ## What's in this V3 pass (and what's next)
 
-This is the first complete **procedurally modeled 3D scene and working interaction pass**, not a photorealistic asset reconstruction. The approved design image is a visual art direction, not an available source for editable 3D models. Higher-poly custom models, detailed PBR textures, baked lightmaps, skeletal cat animation, and comprehensive device-by-device visual QA would be a later targeted art pass once the user approves the modeled composition. No claim is made that these models are exact replicas of the concept art.
+Art pass 1 adds **procedural wood, metal and stone maps**, shelf displays, wood brackets, lamps, extra metalwork and brighter, warmer lighting. This is an early stylized 3D prototype, not yet a high-fidelity asset reconstruction. The approved design image is a visual art direction, not an available source for editable 3D models. Higher-poly custom models, detailed PBR textures, baked lightmaps, skeletal cat animation, and comprehensive device-by-device visual QA would be a later targeted art pass once the user approves the modeled composition. No claim is made that these models are exact replicas of the concept art.
 
 Important performance work later: export Blender-modeled `.glb` assets, use Draco/KTX2 compression, test on real iOS/Android GPUs, and consider selective bloom post-processing. We should **not** switch to a server backend merely for WebGL visuals.
+
+## Art-pass visual QA
+JavaScript syntax and local HTTP asset tests passed. Final WebGL appearance still requires a browser with GPU and network access to jsDelivr. Compare the deployed scene against the approved reference on desktop and mobile; lighting, proportions and performance still need visual review.
