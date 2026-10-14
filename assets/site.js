@@ -197,7 +197,7 @@
   // Progressive Three.js: only a quiet field of particles and a thin rift.
   // CDN failures or unsupported WebGL must never block navigation/content.
   async function initAmbient() {
-    if (prefersReducedMotion.matches || !('WebGLRenderingContext' in window)) return;
+    if (document.body.dataset.world === 'gateway' || prefersReducedMotion.matches || !('WebGLRenderingContext' in window)) return;
     const canvas = document.getElementById('ambient-canvas');
     if (!canvas) return;
     try {

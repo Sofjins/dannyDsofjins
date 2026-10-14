@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0c12">
+  <meta name="theme-color" content="#060b12">
   <meta name="description" content="Danny Sofjins. One curious mind, two unlikely worlds. Explore close-up magic and software engineering.">
   <title>Danny Sofjins — Making the Impossible</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c12'/%3E%3Cpath d='M16 48V16h12c10 0 17 7 17 16s-7 16-17 16H16zm10-8h2c5 0 9-3 9-8s-4-8-9-8h-2v16z' fill='%23f5f0e9'/%3E%3Ccircle cx='49' cy='16' r='5' fill='%23bca4ff'/%3E%3C/svg%3E">
@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
-  <script src="assets/gateway.js" defer></script>
+  <script type="module" src="assets/v3/main.js"></script>
 </head>
 <body data-world="gateway">
   <canvas id="ambient-canvas" aria-hidden="true"></canvas>
@@ -33,39 +33,22 @@
   </header>
 
   <main id="page-root">
-    <!-- ===== GATEWAY: LIVING STREET ===== -->
-    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-label="Choose a door to enter Magic or Software">
-      <div class="street-viewport" id="street-viewport">
-        <div class="street-world" id="street-world">
-          <img class="street-background" src="assets/street-night.webp" alt="Two nighttime storefronts on a rainy Japanese-inspired street: warm Magic Shop and neon Software Hub." fetchpriority="high" decoding="async">
-          <div class="street-vignette" aria-hidden="true"></div>
-          <div class="street-mist street-mist--left" aria-hidden="true"></div>
-          <div class="street-mist street-mist--right" aria-hidden="true"></div>
-          <div class="light-source light-source--magic-window" data-light="candle" aria-hidden="true"></div>
-          <div class="light-source light-source--magic-door" data-light="candle" aria-hidden="true"></div>
-          <div class="light-source light-source--candle-low" data-light="candle" aria-hidden="true"></div>
-          <div class="light-source light-source--neon-cyan" data-light="neon" aria-hidden="true"></div>
-          <div class="light-source light-source--neon-pink" data-light="neon" aria-hidden="true"></div>
-          <div class="light-source light-source--pavement" data-light="reflection" aria-hidden="true"></div>
-          <div class="flame flame--a" aria-hidden="true"></div><div class="flame flame--b" aria-hidden="true"></div><div class="flame flame--c" aria-hidden="true"></div><div class="flame flame--d" aria-hidden="true"></div>
-          <div class="lantern lantern--left" data-lantern="left" aria-hidden="true"><img src="assets/lantern-left.png" alt=""></div>
-          <div class="lantern lantern--right" data-lantern="right" aria-hidden="true"><img src="assets/lantern-right.png" alt=""></div>
-          <div class="coffee-neon" aria-hidden="true"><span class="coffee-icon">♨</span><span class="coffee-word">COFFEE</span><small>WORKING 24/7</small></div>
-          <div class="cat-bowl" aria-hidden="true"><span class="cat-bowl__liquid"></span></div>
-          <button type="button" class="street-cat" id="street-cat" aria-label="Погладить кота" title="Погладить кота">
-            <img class="street-cat__image" src="assets/street-cat.png" alt="" draggable="false">
-            <span class="street-cat__speech" aria-live="polite">mrrr~ ♡</span>
-          </button>
-          <a href="#/magic" class="shop-hit shop-hit--magic" aria-label="Открыть дверь Magic Shop" data-street-door="magic"><span class="shop-hit__outline"></span><span class="shop-hit__label">ENTER THE MAGIC <span aria-hidden="true">↗</span></span></a>
-          <a href="#/software" class="shop-hit shop-hit--software" aria-label="Открыть дверь Software Hub" data-street-door="software"><span class="shop-hit__outline"></span><span class="shop-hit__label">ENTER THE HUB <span aria-hidden="true">↗</span></span></a>
-          <canvas id="street-weather" class="street-weather" aria-hidden="true"></canvas>
+    <!-- ===== GATEWAY V3: FULLY PROCEDURAL 3D STREET ===== -->
+    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-label="Choose between Magic Shop and Software Hub">
+      <div id="gateway-experience" class="gateway-experience">
+        <canvas id="gateway-webgl" aria-label="Interactive 3D alley with Magic Shop and Software Hub" role="img"></canvas>
+        <div class="gateway-atmosphere" aria-hidden="true"></div>
+        <div class="gateway-title" aria-hidden="true">TWO WORLDS <span>·</span> ONE MIND</div>
+        <div class="gateway-instruction" id="gateway-instruction" aria-live="polite">CHOOSE A DOOR <span>↗</span></div>
+        <div class="gateway-cat-speech" id="gateway-cat-speech" aria-live="polite">mrrr~ ♡</div>
+        <div class="gateway-fallback" id="gateway-fallback">
+          <p>Two worlds. One mind.</p><h1>Where would you like to go?</h1>
         </div>
-        <div class="street-hud" aria-hidden="true"><span>A DIFFERENT KIND OF NEIGHBORHOOD</span><span>PRAGUE · AFTER DARK</span></div>
-        <div class="street-bottom-nav" aria-label="Выберите дверь">
-          <a href="#/magic" data-street-door="magic"><span class="bottom-nav__dot bottom-nav__dot--warm"></span> MAGIC SHOP <span aria-hidden="true">↗</span></a>
-          <a href="#/software" data-street-door="software"><span class="bottom-nav__dot bottom-nav__dot--cool"></span> SOFTWARE HUB <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="street-hint" id="street-hint">TAP A DOOR TO STEP INSIDE <span>↗</span></div>
+        <nav class="gateway-world-links" aria-label="Enter a world">
+          <a href="#/magic" data-world-entrance="magic"><span class="gateway-link-orb gateway-link-orb--magic"></span> MAGIC SHOP <span aria-hidden="true">↗</span></a>
+          <a href="#/software" data-world-entrance="software"><span class="gateway-link-orb gateway-link-orb--software"></span> SOFTWARE HUB <span aria-hidden="true">↗</span></a>
+        </nav>
+        <p class="gateway-mobile-tip">DRAG TO EXPLORE THE STREET</p>
       </div>
     </section>
 

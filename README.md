@@ -1,31 +1,48 @@
-# Danny Sofjins — Living Street Gateway
+# Danny Sofjins — Two Worlds, One Mind
 
-A lightweight interactive landing for [dannysofjins.xyz](https://dannysofjins.xyz/). The approved, straight-on night-street artwork is the foundation: **Magic Shop** on the left, **Software Hub** on the right.
+**Gateway V3:** a real-time interactive 3D street: a warm Japanese-influenced Magic Shop and a darker neon Software Hub. This replaces the previously painted/static street with procedural Three.js geometry; the previous artwork is used only as a composition reference and is not loaded by the Gateway.
 
-## What is interactive
+## Deploying with Coolify
 
-- Click either door to zoom into its world; existing Magic and Software pages remain available through hash URLs and browser Back.
-- Three.js draws low-cost depth-aware rain and atmospheric particles over the street (loaded progressively).
-- Two Chinese/Japanese-style lanterns sway **only during occasional wind gusts** or gentle pointer interaction.
-- Independent candlelight glows and small animated flames, plus intermittent cyan/magenta neon flicker and wet-road reflections.
-- Animated black cat with walking / drinking / licking / sitting states. Hover / focus for a purr caption, click for an optional generated purr sound. A small bowl sits between the shops.
-- Dimmed upper floors and more private/darker Software Hub windows, and a small `COFFEE · WORKING 24/7` sign.
-- On narrow screens, drag horizontally to inspect the street. The two always-visible links at the bottom go directly to either page.
+The repo remains a **static website**. Coolify settings:
 
-## Files
+- Build Pack: `Static`
+- Static image: `nginx:alpine`
+- Base Directory: `/`
+- Git branch: `main`
+- Domain: `https://dannysofjins.xyz`
+- Keep **Auto Deploy** enabled and configure GitHub App/webhook delivery; if necessary trigger the first deploy manually.
 
-- `index.html` — HTML scene, two accessible clickable door regions, existing inner pages.
-- `assets/site.css` — page and world styles plus responsive street staging.
-- `assets/site.js` — previously implemented Magic / Software pages and routing.
-- `assets/gateway.js` — lantern, cat, Three.js rain, candle and neon behaviors, mobile panning, entrance zoom.
-- `assets/street-night.webp` — scene art with isolated moving elements removed, compressed for fast load.
-- `assets/street-cat.png`, `assets/lantern-left.png`, `assets/lantern-right.png` — moving cutout layers.
-- `CV_Daniils_Sofjins_SDE_2026.pdf` — existing CV, preserved.
+No backend, Dockerfile, package manager, build process, or environment variables are required. Three.js runs in the browser and is loaded as a pinned ES module from jsDelivr. A static nginx container is sufficient; switching to Docker will **not** increase client-side frame rate or 3D quality.
 
-## How to run
+Local test: serve the folder over HTTP, e.g. `python3 -m http.server 8080`, then open `http://localhost:8080`. (Use HTTP, not `file://`, for ESM.)
 
-This prototype is static HTML + CSS + JavaScript. Serve the directory from any static server (`python -m http.server 8000`) and open it in a browser. `#`, `#/magic`, and `#/software` work without special routing configuration. Three.js is imported from jsDelivr if WebGL is available; a static artwork fallback works without WebGL.
+## Structure
 
-## Deliberately postponed
+```text
+index.html                existing Magic / Software content, redesigned Gateway
+assets/site.css           shared styles + V3 responsive Gateway UI
+assets/site.js            existing accessible hash router, booking modal, Magic mini-trick
+assets/v3/three.js        pinned CDN loader for Three.js 0.179.1
+assets/v3/primitives.js   3D mesh/material/text helpers
+assets/v3/environment.js  genuine 3D paving, walls, neon reflections, rain, lights
+assets/v3/shops.js        genuine 3D shops, shop interiors, doors, lanterns, signs
+assets/v3/cat.js          separate articulated 3D cat + bowl; animation states
+assets/v3/main.js         camera, pointer raycasting, transitions, updates, responsive motion
+```
 
-Real 3D cat rigging, dynamic interior scenes, custom shader lighting and physical rain simulation, booking backend and CMS. The existing Magic and Software content is unchanged. This is a gateway iteration for visual feedback.
+## Designed interactions
+
+- **Magic Shop door:** mouse hover reveals subtle warm light from inside; click pulls the camera towards the shop and opens `#/magic`.
+- **Software Hub door:** cool hover focus, dark frosted shop window, irregular neon `Software Hub`, `Canoodling`, `git commit`, `git push`, `COFFEE`, `WORKING 24/7`; click opens `#/software`.
+- **Cat:** independent walking, sitting, grooming, drinking and looking animations; pointer hover gives an `mrrr~` response.
+- **Lanterns:** modeled paper lanterns with gentle occasional motion rather than uninterrupted swinging.
+- **Street:** mesh cobbles and metal fixtures, warm/cool reflected streaks, particles, fog and soft practical light.
+- **Mobile:** touch-friendly always-visible Magic / Software links and horizontal drag to look around; capped pixel ratio / reduced particles / fewer cobbles.
+- **Accessibility:** navigation is ordinary HTML; direct URLs work with hash routing; a CSS-only text fallback stays visible if JavaScript or WebGL fails; honors `prefers-reduced-motion`.
+
+## What's in this V3 pass (and what's next)
+
+This is the first complete **procedurally modeled 3D scene and working interaction pass**, not a photorealistic asset reconstruction. The approved design image is a visual art direction, not an available source for editable 3D models. Higher-poly custom models, detailed PBR textures, baked lightmaps, skeletal cat animation, and comprehensive device-by-device visual QA would be a later targeted art pass once the user approves the modeled composition. No claim is made that these models are exact replicas of the concept art.
+
+Important performance work later: export Blender-modeled `.glb` assets, use Draco/KTX2 compression, test on real iOS/Android GPUs, and consider selective bloom post-processing. We should **not** switch to a server backend merely for WebGL visuals.
