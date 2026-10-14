@@ -12,7 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
-  <script type="module" src="assets/v3/main.js"></script>
+  <link rel="stylesheet" href="assets/v25/gateway.css">
+  <script type="module" src="assets/v25/main.js"></script>
 </head>
 <body data-world="gateway">
   <canvas id="ambient-canvas" aria-hidden="true"></canvas>
@@ -33,22 +34,22 @@
   </header>
 
   <main id="page-root">
-    <!-- ===== GATEWAY V3: FULLY PROCEDURAL 3D STREET ===== -->
-    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-label="Choose between Magic Shop and Software Hub">
-      <div id="gateway-experience" class="gateway-experience">
-        <canvas id="gateway-webgl" aria-label="Interactive 3D alley with Magic Shop and Software Hub" role="img"></canvas>
-        <div class="gateway-atmosphere" aria-hidden="true"></div>
-        <div class="gateway-title" aria-hidden="true">TWO WORLDS <span>·</span> ONE MIND</div>
-        <div class="gateway-instruction" id="gateway-instruction" aria-live="polite">CHOOSE A DOOR <span>↗</span></div>
-        <div class="gateway-cat-speech" id="gateway-cat-speech" aria-live="polite">mrrr~ ♡</div>
-        <div class="gateway-fallback" id="gateway-fallback">
-          <p>Two worlds. One mind.</p><h1>Where would you like to go?</h1>
+    <!-- ===== GATEWAY V4: ART-DIRECTED 2.5D NIGHT STREET ===== -->
+    <section id="page-gateway" class="page page--gateway is-current" data-page="gateway" aria-label="Choose Magic Shop or Software Hub">
+      <div class="gateway-experience" id="gateway-experience">
+        <img src="assets/v25/street-master.webp" id="gateway-still" class="gateway-still" alt="Warm, lantern-lit Magic Shop beside a dark cyberpunk Software Hub on a rainy Japanese-inspired street." fetchpriority="high" decoding="async">
+        <canvas id="gateway-webgl" aria-hidden="true"></canvas>
+        <div class="gateway-hotspots" id="gateway-hotspots" aria-label="Choose a shop">
+          <a href="#/magic" class="gateway-door gateway-door--magic" data-gateway-door="magic" aria-label="Enter Magic Shop"><span class="gateway-door__aura"></span><span class="gateway-door__caption">ENTER MAGIC SHOP ↗</span></a>
+          <a href="#/software" class="gateway-door gateway-door--software" data-gateway-door="software" aria-label="Enter Software Hub"><span class="gateway-door__aura"></span><span class="gateway-door__caption">ENTER SOFTWARE HUB ↗</span></a>
+          <button id="gateway-cat-spot" class="gateway-cat-spot" aria-label="Say hello to the street cat" type="button"><span>mrrr~ ♡</span></button>
         </div>
-        <nav class="gateway-world-links" aria-label="Enter a world">
-          <a href="#/magic" data-world-entrance="magic"><span class="gateway-link-orb gateway-link-orb--magic"></span> MAGIC SHOP <span aria-hidden="true">↗</span></a>
-          <a href="#/software" data-world-entrance="software"><span class="gateway-link-orb gateway-link-orb--software"></span> SOFTWARE HUB <span aria-hidden="true">↗</span></a>
+        <div class="gateway-instruction" id="gateway-instruction" aria-live="polite">CHOOSE A DOOR</div>
+        <nav class="gateway-world-links" aria-label="Choose a destination">
+          <a href="#/magic" data-gateway-door="magic"><span class="gateway-link-orb"></span> MAGIC SHOP ↗</a>
+          <a href="#/software" data-gateway-door="software"><span class="gateway-link-orb gateway-link-orb--software"></span> SOFTWARE HUB ↗</a>
         </nav>
-        <p class="gateway-mobile-tip">DRAG TO EXPLORE THE STREET</p>
+        <div class="gateway-mobile-tip">SWIPE TO EXPLORE THE STREET</div>
       </div>
     </section>
 

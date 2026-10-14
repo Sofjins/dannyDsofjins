@@ -1,0 +1,50 @@
+/* V4 Gateway — art-directed 2.5D. One approved scene, measured optical depth. */
+body[data-world="gateway"]{background:#05070c;overflow:hidden}
+body[data-world="gateway"] #page-root{height:100svh;overflow:hidden}
+body[data-world="gateway"] .page--gateway{height:100svh;min-height:0;overflow:hidden}
+body[data-world="gateway"] #ambient-canvas,body[data-world="gateway"] .grain,body[data-world="gateway"] .site-footer{display:none}
+body[data-world="gateway"] .site-header{position:absolute;z-index:40;top:0;left:0;right:0;max-width:none;height:64px;background:linear-gradient(180deg,rgba(3,5,10,.69),transparent);border:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+body[data-world="gateway"] .brand__mark{display:none}
+body[data-world="gateway"] .brand__name{font:600 11px/1.12 var(--display);letter-spacing:2px;color:#ebe8e5;text-shadow:0 1px 11px #05050a}
+body[data-world="gateway"] .main-nav{background:rgba(5,9,17,.42);border-color:rgba(245,246,255,.15);backdrop-filter:blur(14px)}
+body[data-world="gateway"] .nav-link.is-current{background:rgba(255,255,255,.15);color:white}
+body[data-world="gateway"] .header-contact{color:#eae7f0;text-shadow:0 1px 8px #000}
+.gateway-experience{position:absolute;inset:0;background:#05070c;overflow:hidden;isolation:isolate;touch-action:pan-y}
+.gateway-still{position:absolute;left:50%;top:50%;height:auto;width:100%;max-width:none;object-fit:fill;display:block;transform:translate(-50%,-50%);z-index:0;user-select:none;pointer-events:none;will-change:transform}
+#gateway-webgl{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;pointer-events:none;opacity:0;transition:opacity .75s ease;image-rendering:auto}
+.gateway-experience.has-25d #gateway-webgl{opacity:1}
+.gateway-experience.has-25d .gateway-still{opacity:0}
+.gateway-hotspots{position:absolute;top:50%;left:50%;z-index:4;pointer-events:none;will-change:transform}
+.gateway-door{position:absolute;display:block;pointer-events:auto;outline-offset:2px;border-radius:2px;cursor:pointer}
+.gateway-door--magic{left:20.2%;top:44.3%;width:17.1%;height:26.4%}
+.gateway-door--software{left:57.6%;top:34.5%;width:15.2%;height:38.8%}
+.gateway-door__aura{position:absolute;inset:1%;opacity:0;transition:opacity .46s ease;filter:blur(17px);border-radius:25%;pointer-events:none}
+.gateway-door--magic .gateway-door__aura{background:radial-gradient(ellipse at 55% 57%,rgba(255,171,66,.27),rgba(255,131,37,.11) 52%,transparent 82%)}
+.gateway-door--software .gateway-door__aura{background:radial-gradient(ellipse at 50% 42%,rgba(80,193,242,.18),rgba(53,119,222,.07) 50%,transparent 84%)}
+.gateway-door:hover .gateway-door__aura,.gateway-door:focus-visible .gateway-door__aura{opacity:1}
+.gateway-door__caption{position:absolute;bottom:13%;left:50%;transform:translate(-50%,8px);opacity:0;white-space:nowrap;color:#f4f0ea;text-shadow:0 1px 14px #000,0 1px 3px #000;padding:7px 11px;background:rgba(4,6,10,.48);border:1px solid rgba(255,255,255,.08);border-radius:3px;backdrop-filter:blur(5px);font:600 clamp(8px,.7vw,12px) var(--display);letter-spacing:.09em;transition:opacity .3s,transform .3s;pointer-events:none}
+.gateway-door:hover .gateway-door__caption,.gateway-door:focus-visible .gateway-door__caption{opacity:1;transform:translate(-50%,0)}
+.gateway-cat-spot{position:absolute;left:43%;top:66.4%;width:11%;height:10%;z-index:5;border:0;background:transparent;pointer-events:auto;cursor:pointer;outline-offset:4px}
+.gateway-cat-spot span{position:absolute;left:50%;bottom:88%;transform:translate(-50%,8px);opacity:0;white-space:nowrap;background:rgba(8,9,12,.78);color:#ffe2bd;border-radius:100px;padding:7px 13px;font:italic 18px Georgia,serif;transition:opacity .3s,transform .3s;box-shadow:0 3px 15px #0008;pointer-events:none}
+.gateway-experience.cat-purr .gateway-cat-spot span,.gateway-cat-spot:focus-visible span{opacity:1;transform:translate(-50%,0)}
+.gateway-instruction{position:absolute;z-index:5;top:74px;left:50%;transform:translateX(-50%);font:600 9px var(--display);letter-spacing:.25em;color:#f4eff2c9;white-space:nowrap;opacity:0;text-shadow:0 2px 10px #000;transition:opacity .35s;pointer-events:none}
+.gateway-experience[data-hover] .gateway-instruction{opacity:.85}
+.gateway-experience[data-hover=""] .gateway-instruction{opacity:0}
+.gateway-world-links{position:absolute;z-index:9;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:3px;padding:5px;border-radius:99px;border:1px solid rgba(250,252,255,.18);background:rgba(6,9,16,.60);backdrop-filter:blur(14px);box-shadow:0 10px 25px #03040988}
+.gateway-world-links a{font:600 10px var(--display);letter-spacing:.13em;color:#eeebf2;display:flex;gap:10px;align-items:center;padding:11px 16px;white-space:nowrap;border-radius:99px;transition:background .25s}
+.gateway-world-links a:hover,.gateway-world-links a:focus-visible{background:#ffffff1a}
+.gateway-link-orb{width:6px;height:6px;display:inline-block;border-radius:100%;background:#e6a974;box-shadow:0 0 7px #ee8d4a}
+.gateway-link-orb--software{background:#85dfff;box-shadow:0 0 7px #26aaff}
+.gateway-mobile-tip{display:none;position:absolute;z-index:5;top:78px;left:50%;transform:translateX(-50%);font:600 9px var(--display);letter-spacing:.1em;color:#e9ebf4aa;white-space:nowrap;pointer-events:none}
+.gateway-experience[data-entering="magic"] .gateway-world-links,.gateway-experience[data-entering="software"] .gateway-world-links{opacity:0;transition:opacity .3s;pointer-events:none}
+@media(max-width:760px){
+ body[data-world="gateway"] .site-header{height:58px;padding:0 15px}
+ body[data-world="gateway"] .main-nav,body[data-world="gateway"] .header-contact{display:none}
+ body[data-world="gateway"] .brand__name{display:block;font-size:10px}
+ .gateway-world-links{bottom:max(14px,env(safe-area-inset-bottom));max-width:calc(100vw - 18px);width:calc(100vw - 18px);justify-content:space-evenly}
+ .gateway-world-links a{padding:13px 8px;font-size:9px;letter-spacing:.07em;gap:6px}
+ .gateway-mobile-tip{display:block;top:75px}
+ .gateway-instruction{top:96px;font-size:8px}
+ .gateway-door__caption{display:none}
+}
+@media(prefers-reduced-motion:reduce){.gateway-experience *, .gateway-experience *::before,.gateway-experience *::after{animation:none!important;transition:none!important}}
