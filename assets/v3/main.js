@@ -3,6 +3,7 @@ import {buildMagic,buildSoftware} from './shops.js';
 import {buildEnvironment,makeRain} from './environment.js';
 import {createCat} from './cat.js';
 import {applySurfaceMaterials,detailMagic,detailSoftware,detailStreet} from './art-pass.js';
+import {detailPassTwo} from './detail-pass2.js';
 
 const root=document.getElementById('gateway-experience');
 const canvas=document.getElementById('gateway-webgl');
@@ -35,13 +36,14 @@ function sceneInit(){
  renderer=new THREE.WebGLRenderer({canvas,antialias:!mobile.matches,alpha:false,powerPreference:'high-performance'});
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=2.04;
+ renderer.toneMappingExposure=2.24;
  scene=new THREE.Scene();
  applySurfaceMaterials();
  camera=new THREE.PerspectiveCamera(30,1,.1,90);
  buildEnvironment(scene,{mobile:mobile.matches});
  const magic=detailMagic(buildMagic(scene));const software=detailSoftware(buildSoftware(scene));
  detailStreet(scene);
+ detailPassTwo(scene,{magic,software},{mobile:mobile.matches});
  shops={magic,software};
  cat=createCat(scene);
  weather=makeRain(scene,{count:mobile.matches?115:230});
@@ -128,8 +130,8 @@ function animateNeon(t){
     light.intensity=Math.max(.09,base*(1+disturbance-burst));
     group.traverse(o=>{if(o.isMesh&&o.userData.sign)o.material.opacity=.77+Math.sin(t*1.24+offset)*.10-burst*.4;});
   });
-  hub.mainLight.intensity=3.10*(1+Math.sin(t*1.33)*.022)-((Math.sin(t*3.11)> .991)? .52:0);
-  hub.coffeeLight.intensity=.94*(1+Math.sin(t*.61)*.11);
+  hub.mainLight.intensity=4.6*(1+Math.sin(t*1.33)*.022)-((Math.sin(t*3.11)> .991)? .52:0);
+  hub.coffeeLight.intensity=1.55*(1+Math.sin(t*.61)*.11);
 }
 function animateLanterns(t,dt){
  for(let i=0;i<shops.magic.lanterns.length;i++){
@@ -165,7 +167,7 @@ function tick(){
    const softwareTurn=selected==='software'?-1.02:hovered==='software'?-.07:0;
    shops.magic.door.rotation.y+=(magicTurn-shops.magic.door.rotation.y)*Math.min(1,dt*4);
    shops.software.door.rotation.y+=(softwareTurn-shops.software.door.rotation.y)*Math.min(1,dt*4);
-   shops.magic.lights.forEach((l,i)=>{l.intensity+=((selected==='magic'?5.3:hovered==='magic'?4.65:4.0)-l.intensity)*Math.min(1,dt*3);});
+   shops.magic.lights.forEach((l,i)=>{l.intensity+=((selected==='magic'?9.0:hovered==='magic'?8.25:7.3)-l.intensity)*Math.min(1,dt*3);});
    for(let i=0;i<shops.magic.candles.length;i++){
      const c=shops.magic.candles[i];c.flame.scale.y=.87+Math.sin(t*11.1+i*4.2)*.17;
      c.light.intensity=.30*(.87+.15*Math.sin(t*7.1+i*2.2));

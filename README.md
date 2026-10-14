@@ -50,3 +50,8 @@ Important performance work later: export Blender-modeled `.glb` assets, use Drac
 
 ## Art-pass visual QA
 JavaScript syntax and local HTTP asset tests passed. Final WebGL appearance still requires a browser with GPU and network access to jsDelivr. Compare the deployed scene against the approved reference on desktop and mobile; lighting, proportions and performance still need visual review.
+
+
+## Art pass 2 — enhanced storefront detail
+
+`assets/v3/detail-pass2.js` adds curved 3D roof tile instances, sculpted paper lanterns, dimensional curtains, added display shelves and card objects, industrial vents, old service boxes and small world-space wet pavement glints. The art direction still needs iteration against the approved reference on real browsers. These are real Three.js meshes, not a photographic background image. For final high-fidelity art we should use curated Blender-made GLB assets and baked maps after the composition is approved.

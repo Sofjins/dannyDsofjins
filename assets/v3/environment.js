@@ -21,11 +21,11 @@ export function buildEnvironment(scene,{mobile=false}={}){
   box(scene,26,9.5,.35,0,4.2,-4.6,darkBack);
   box(scene,3.4,11.6,3.3,-12.25,4.9,-2.1,mat('#0b0d12'));
   box(scene,3.4,11.6,3.3,12.25,4.9,-1.7,mat('#0a0e17'));
-  const street=mat('#161a23',.53,.3);
+  const street=mat('#23242d',.43,.36);
   box(scene,27,.12,15,0,-.12,5.6,street);
   // Uneven individual physical cobbles: subtle randomized variation, no image tiles.
   const count=mobile?420:770;
-  const inst=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),mat('#999999',.45,.32),count);
+  const inst=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),mat('#999999',.43,.32),count);
   const proxy=new THREE.Object3D();const color=new THREE.Color();
   for(let i=0;i<count;i++){
     const row=Math.floor(i/35),col=i%35;
@@ -62,10 +62,10 @@ export function buildEnvironment(scene,{mobile=false}={}){
   groundLight(scene,4.4,4.6,4.3,10,'#2266b7',.86);
   groundLight(scene,8.1,4.2,2.8,8,'#882373',.56);
   // Warm amber and cold electric light reach the pavement rather than existing as screen glow overlays.
-  const hemi=new THREE.HemisphereLight('#a1aec3','#4e342d',2.9);scene.add(hemi);
-  const moon=new THREE.DirectionalLight('#d6dae4',1.75);moon.position.set(-4,11,9);scene.add(moon);
+  const hemi=new THREE.HemisphereLight('#a1aec3','#635044',3.5);scene.add(hemi);
+  const moon=new THREE.DirectionalLight('#d6dae4',1.9);moon.position.set(-4,11,9);scene.add(moon);
   const fill=point(scene,'#398dd9',2.35,5.2,5.2,4.6,12.0);
-  const amber=point(scene,'#ffad5c',3.1,-6.1,4.5,2.5,11);
+  const amber=point(scene,'#ffad5c',4.1,-6.1,4.5,2.5,11);
   return {hemi,moon,fill,amber};
 }
 
