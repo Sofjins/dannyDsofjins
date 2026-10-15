@@ -1,23 +1,32 @@
-# Danny Sofjins — Gallery-quality 2.5D Gateway
+# Danny Sofjins — Living Street
 
-This is the **art-directed 2.5D** rebuild of the gateway. Unlike the procedural V3 blockout, the approved storefront composition forms the main artwork. Three.js samples a hand-authored depth map to displace a single continuous mesh and animates separately registered warm, cyan and magenta emission masks.
+The landing is a reference-matched hybrid Three.js scene: the two-shop artwork provides the architecture, with independently animated lanterns, candle flames, foliage, a jointed 3D cat, and mist at three depths.
 
-## Design choices
+Both shop doors transition to the existing Magic and Software pages. The next scenes/interiors are a separate design phase.
 
-- The art is deliberately high-fidelity. No low-poly procedural storefronts, duplicate cat sprites, or cheap animated models.
-- The door hit zones are invisible, keyboard-accessible HTML links. Hover adds light **inside** the door, not a rectangular frame.
-- The cat is baked into the approved artwork until a genuinely convincing licensed rigged GLB asset is acquired. It can currently be greeted; fake walk/lick animations have intentionally been removed.
-- The Three.js relief adds restrained actual geometry depth (recessed doors and windows, closer lanterns and road), with camera parallax and zoom. This is a 2.5D scene, not a freely explorable 3D street.
-- Light masks are derived from the exact image pixels so they stay aligned. Neon is slightly imperfect, candle/window warm light flickers subtly, and rain is very sparse.
-- Mobile uses a horizontally pannable close-up and accessible destination links. Reduced motion/WebGL failure show the original high-quality artwork.
-- `/magic` and `/software` remain the previous content pages, unchanged.
+## Run and verify
 
-## Run and deploy
+```sh
+npm ci
+npm run dev
+npm test
+npx playwright install chromium
+npm run test:browser
+```
 
-No bundler or backend is required. Keep Coolify's existing **Static** build pack / **nginx:alpine**, base directory `/`. Modules load via HTTPS (Three.js via a pinned CDN version). The image and the depth/emission maps are served as local files in `assets/v25`.
+Open http://localhost:4173. Production is still static HTML/CSS/JS and images; Coolify can serve the repository root without a Node process or a build command. Three.js 0.184.0 is bundled locally, so the scene does not depend on a CDN. Rebuild that checked-in bundle with `npm run build:vendor` after dependency changes.
 
-Serve locally with `python3 -m http.server 8080` (do not open from `file://`), then visit `http://localhost:8080`.
+## Scene behavior
 
-## Optional next assets
+- The cat drinks, walks to the crate beside the bicycle, crouches, jumps, lands, perches, and returns. Its leg joints use inverse kinematics, with a segmented tail, warm/cool lighting and a contact shadow. Clicking it produces a brief greeting without interrupting its path.
+- The original painted cat is removed in live mode using a small feathered patch from the generated clean plate. Original mode restores the untouched reference, including its original cat.
+- Five plant groups have separate textured meshes with fixed roots. Only their meshes bend; the building and street never deform.
+- Lanterns and candle flames retain the existing registered cutouts. Neon dips are localized and reflected on the wet pavement; mist drifts in three layers.
+- Both doors remain accessible links. Entry adds a short push-in/fade; reduced motion skips it. Mobile offers the whole street and explicit close views.
+- Animation pauses outside the gateway and when the tab is hidden. Reduced motion and WebGL failure retain the original artwork and working navigation.
 
-A high-quality animated black-cat GLB can be imported later after visual review and licensing verification. Do not replace the baked cat with a low-quality primitive model. More sophisticated 2.5D foreground cut-outs (lanterns, plants, cables) require clean plates or manual inpainting to avoid doubled visual edges when moved.
+The cat is a first-pass procedural model, not a licensed or sculpted film-quality asset. Visual review should decide whether its silhouette/materials need a bespoke rig. See [the implementation plan](docs/living-street-plan.md).
+
+## Checks
+
+GitHub Actions runs motion/contact tests, actual WebGL browser checks, the existing reference checks, and a browser recording. Screenshots and reports are retained as `gateway-reference-proof`. A passing motion test alone does not establish visual quality; inspect the screenshots and video.

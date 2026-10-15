@@ -1,0 +1,17 @@
+{
+  "name": "danny-living-street",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 4173 --bind 127.0.0.1",
+    "test": "node --test tests/cat-motion.test.mjs",
+    "test:browser": "node tests/living-street.mjs",
+    "build:vendor": "esbuild assets/v25/three-entry.js --bundle --minify --format=esm --outfile=assets/v25/three-vendor.js --legal-comments=inline"
+  },
+  "devDependencies": {
+    "esbuild": "0.27.1",
+    "playwright": "1.58.2",
+    "pngjs": "7.0.0",
+    "three": "0.184.0"
+  }
+}

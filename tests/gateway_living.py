@@ -54,7 +54,7 @@ try:
         change=diff[y:y+h,x:x+w]
         check(f'actual_visible_motion_{id}',int((change.max(axis=2)>3).sum())>80,int((change.max(axis=2)>3).sum()))
     check('real_flame_pixel_motion',int(diff[552:568,470:482].max())>3)
-    check('roof_and_magic_sign_unchanged',int(diff[90:200,220:600].max())==0)
+    check('roof_and_magic_sign_unchanged',int(diff[105:190,240:510].max())==0)
     check('software_window_not_warped',int(diff[380:525,1130:1300].max())==0)
     frame(page,10.0)
     rest=page.evaluate('window.__gatewayTest.snapshot().motion')

@@ -2,6 +2,8 @@
  * No new street artwork or external model is generated. Coordinates are source pixels.
  * The hidden background is reconstructed locally, and exposed by no more than 5px.
  */
+import { FOLIAGE } from './foliage.js';
+
 export const LANTERNS = [
   { id:'left', rect:[116,214,100,176], pivot:[164,224],
     path:'M162 224 L166 224 L166 233 L171 235 L171 244 L179 246 L180 252 C197 258 202 270 203 291 L203 331 C202 350 196 359 185 365 L179 367 L179 376 L166 378 L166 385 L162 385 L162 378 L146 378 L145 367 C131 360 125 345 125 329 L124 290 C124 269 131 260 146 254 L146 246 L157 244 L157 235 L162 232 Z',
@@ -60,8 +62,20 @@ function restoreBehind(source, mask) {
   ctx.putImageData(result,0,0);return out;
 }
 
-export function prepareLivingAssets(image) {
+export function prepareLivingAssets(image, cleanPlate) {
   const clean=makeCanvas(1536,1024),cc=clean.getContext('2d');cc.drawImage(image,0,0);
+  if (cleanPlate) {
+    const patch = makeCanvas(188, 114);
+    const context = patch.getContext('2d');
+    context.drawImage(cleanPlate, 628, 678, 188, 114, 0, 0, 188, 114);
+    const pixels = context.getImageData(0, 0, 188, 114);
+    for (let row = 0; row < 114; row++) for (let column = 0; column < 188; column++) {
+      const edge = Math.min(column, row, 187 - column, 113 - row);
+      pixels.data[(row * 188 + column) * 4 + 3] = Math.min(255, edge / 6 * 255);
+    }
+    context.putImageData(pixels, 0, 0);
+    cc.drawImage(patch, 628, 678);
+  }
   const cut = (spec) => {
     const [x,y,w,h]=spec.rect,source=makeCanvas(w,h),sc=source.getContext('2d');
     sc.drawImage(image,x,y,w,h,0,0,w,h);
@@ -71,8 +85,8 @@ export function prepareLivingAssets(image) {
     tc.globalCompositeOperation='destination-in';tc.drawImage(mask,0,0);
     return {...spec,texture,plate,mask};
   };
-  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut);
-  return {clean,lanterns,flames};
+  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut), foliage=FOLIAGE.map(cut);
+  return {clean,lanterns,flames,foliage,catRemoved:Boolean(cleanPlate)};
 }
 
 /** Long rests between naturally damped gusts. Hover is a single extra impulse,

@@ -8,6 +8,9 @@ on:
       - 'index.html'
       - 'tests/gateway_reference.py'
       - 'tests/gateway_living.py'
+      - 'tests/living-street.mjs'
+      - 'tests/cat-motion.test.mjs'
+      - 'package*.json'
       - '.github/workflows/gateway-reference.yml'
   workflow_dispatch:
 permissions:
@@ -26,12 +29,15 @@ jobs:
           python-version: '3.12'
       - name: Install pinned test dependencies (not production dependencies)
         run: |
-          npm install --no-save --no-package-lock --ignore-scripts three@0.179.1
+          npm ci --ignore-scripts
           python -m pip install playwright==1.55.0 pillow==11.3.0 numpy==2.3.3
           python -m playwright install --with-deps chromium
+          npx playwright install --with-deps chromium
       - name: Syntax and real WebGL reference verification
         run: |
           node --check assets/v25/main.js
+          npm test
+          GATEWAY_PREVIEW_LOG=1 npm run test:browser
           python tests/gateway_reference.py --require-webgl
           python tests/gateway_living.py
       - uses: actions/upload-artifact@v4

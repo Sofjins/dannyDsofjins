@@ -7,7 +7,7 @@ if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-lanterns-1';
+  const VERSION = 'living-street-2';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -18,7 +18,7 @@ function boot(root) {
   const state = { mode: 'reference', view: 'full', renderer: 'loading', hover: null,
     magic: 0, software: 0, frame: 0, last: 0, entering: null, timer: 0,
     disposed: false, width: 0, height: 0, reason: null };
-  let THREE, renderer, scene, camera, material, plane, raycaster, living;
+  let THREE, renderer, scene, camera, material, plane, raycaster, living, catTarget;
   let elapsed = 0, testTime = null;
   const pickMeshes = [];
   const resources = [];
@@ -63,7 +63,7 @@ function boot(root) {
   views.innerHTML = '<button type="button" data-view="full" aria-pressed="true">Full street</button><button type="button" data-view="magic" aria-pressed="false">Magic view</button><button type="button" data-view="software" aria-pressed="false">Software view</button>';
   const controls = el('div', 'reference-controls');
   const note = el('p', 'reference-note');
-  note.textContent = 'Choose a door. Step inside.';
+  note.textContent = 'Two worlds. One curious mind.';
   const links = el('nav', 'gateway-world-links');
   links.setAttribute('aria-label', 'Shop destinations');
   links.innerHTML = '<a href="#/magic" data-gateway-door="magic">Magic Shop <span aria-hidden="true">↗</span></a><a href="#/software" data-gateway-door="software">Software Hub <span aria-hidden="true">↗</span></a>';
@@ -134,6 +134,8 @@ function boot(root) {
   function enter(id) {
     if (!doors[id] || state.entering || state.disposed) return;
     state.entering = id;
+    const doorway = doors[id];
+    art.style.transformOrigin = `${(doorway.x + doorway.w / 2) / W * 100}% ${(doorway.y + doorway.h / 2) / H * 100}%`;
     root.dataset.entering = id;
     const finish = () => {
       window.__fromStreetGateway = true;
@@ -146,7 +148,7 @@ function boot(root) {
         }
       }, 80);
     };
-    if (reduced.matches) finish(); else state.timer = setTimeout(finish, 240);
+    if (reduced.matches) finish(); else state.timer = setTimeout(finish, 760);
   }
   for (const a of root.querySelectorAll('[data-gateway-door]')) {
     const id = a.dataset.gatewayDoor;
@@ -185,6 +187,15 @@ function boot(root) {
     if (live && testTime === null) elapsed += dt;
     const clock = testTime === null ? elapsed : testTime;
     living?.update(clock);
+    if (catTarget) {
+      const pose = living.catPose();
+      catTarget.hidden = !live || !pose;
+      if (pose) {
+        catTarget.style.left = `${(pose.x - 76) / W * 100}%`;
+        catTarget.style.top = `${(pose.screenY - 99) / H * 100}%`;
+        catTarget.dataset.greeting = String(pose.greeting > .1);
+      }
+    }
     const targetMagic = live && state.hover === 'magic' ? 1 : 0;
     const targetSoftware = live && state.hover === 'software' ? 1 : 0;
     const k = 1 - Math.exp(-dt * 12);
@@ -224,7 +235,7 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js');
+      THREE = await import('./three-vendor.js');
       await still.decode();
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
@@ -232,8 +243,8 @@ function boot(root) {
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.setClearColor(0x080b0e, 1);
       scene = new THREE.Scene();
-      camera = new THREE.OrthographicCamera(0, W, H, 0, .1, 20);
-      camera.position.set(0, 0, 10);
+      camera = new THREE.OrthographicCamera(0, W, H, 0, .1, 2500);
+      camera.position.set(0, 0, 1200);
       camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
       const texture = new THREE.Texture(still);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -269,6 +280,10 @@ function boot(root) {
           neon -= lightMask(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .48;
           neon -= lightMask(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .30;
           neon -= lightMask(px,vec2(1166.0,234.0),vec2(41.0,22.0)) * (1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5))) * .30;
+          float hubDip = 1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5));
+          neon -= lightMask(px,vec2(1115.0,893.0),vec2(126.0,112.0)) * hubDip * .15;
+          neon -= lightMask(px,vec2(1280.0,875.0),vec2(88.0,96.0)) * dipB * .12;
+          flicker += lightMask(px,vec2(410.0,858.0),vec2(163.0,99.0)) * sin(uClock*5.3+1.8) * .018;
           float gain = uLive * (warm*flicker + cool*neon);
           gain += uMagic * lightMask(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
           gain += uSoftware * lightMask(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
@@ -292,8 +307,19 @@ function boot(root) {
       renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
-      const { createLivingScene } = await import('./living-scene.js?v=living-1');
-      living = createLivingScene({ THREE, scene, image: still, material, originalTexture: texture });
+      const cleanPlate = new Image();
+      cleanPlate.src = new URL('./street-clean.webp', import.meta.url).href;
+      await cleanPlate.decode();
+      if (state.disposed) return;
+      const { createLivingScene } = await import('./living-scene.js?v=living-street-2');
+      living = createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate });
+      catTarget = el('button', 'living-cat-target');
+      catTarget.type = 'button';
+      catTarget.setAttribute('aria-label', 'Say hello to the street cat');
+      catTarget.innerHTML = '<span aria-hidden="true">mrrp.</span>';
+      catTarget.hidden = true;
+      hotspots.append(catTarget);
+      on(catTarget, 'click', () => { if (state.mode === 'live') { living.greet(); schedule(); } });
       for (const spec of living.prepared.lanterns) {
         const b = el('button', 'living-lantern-target');
         b.type = 'button'; b.dataset.lantern = spec.id;
@@ -329,6 +355,7 @@ function boot(root) {
     version: VERSION, setMode, setView, raycastAt,
     seek: seconds => { testTime = Number.isFinite(seconds) ? Math.max(0,seconds) : null; schedule(); },
     nudgeLantern: id => { living?.react(id); schedule(); },
+    greetCat: () => { living?.greet(); schedule(); },
     snapshot: () => ({ renderer: state.renderer, reason: state.reason, mode: state.mode,
       motion: living?.snapshot() || null, view: state.view, camera: camera?.type || null,
       vertices: plane?.geometry.attributes.position.count || 0,

@@ -1,7 +1,10 @@
 /** Rigid 2.5D props over the reference-locked architecture, rendered by Three.js. */
-import {prepareLivingAssets, lanternAngle} from './living-assets.js';
-export function createLivingScene({THREE,scene,image,material,originalTexture}) {
-  const H=1024,resources=[], prepared=prepareLivingAssets(image);
+import {prepareLivingAssets, lanternAngle} from './living-assets.js?v=living-street-2';
+import {createFoliage} from './foliage.js';
+import {createAtmosphere} from './atmosphere.js';
+import {createStreetCat} from './street-cat.js';
+export function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate}) {
+  const H=1024,resources=[], prepared=prepareLivingAssets(image,cleanPlate);
   const root=new THREE.Group();root.name='LivingProps';root.visible=false;scene.add(root);
   const tx=canvas=>{
     const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;
@@ -19,6 +22,17 @@ export function createLivingScene({THREE,scene,image,material,originalTexture}) 
   }
   const lanterns=prepared.lanterns.map(s=>makeProp(s,.12));
   const flames=prepared.flames.map(s=>makeProp(s,.14));
+  const foliage=createFoliage({THREE,parent:root,prepared:prepared.foliage,texture:tx});
+  const atmosphere=createAtmosphere({THREE,parent:root});
+  const cat=prepared.catRemoved?createStreetCat({THREE,parent:root}):null;
+  const sky=new THREE.HemisphereLight(0x9eabc3,0x2f2421,1.3);
+  const amber=new THREE.PointLight(0xffb476,240000,1400,2);
+  amber.position.set(360,550,260);
+  const cyan=new THREE.PointLight(0x78bfff,270000,1400,2);
+  cyan.position.set(1110,650,300);
+  const rim=new THREE.DirectionalLight(0x8fa6bb,1.5);
+  rim.position.set(-100,700,-120);
+  root.add(sky,amber,cyan,rim);
   let enabled=false,clock=0;
   // Sparse ground-only rain avoids overlaying streaks across the sign lettering.
   const count=28,buffer=new Float32Array(count*6),seeds=[];
@@ -41,6 +55,9 @@ export function createLivingScene({THREE,scene,image,material,originalTexture}) 
   }
   function update(t){
     clock=t;if(!enabled)return;
+    foliage.update(t);atmosphere.update(t);cat?.update(t);
+    amber.intensity=240000*(1+Math.sin(t*5.3)*.035);
+    cyan.intensity=270000*(1-Math.max(0,1-Math.abs(((t+2)%17.3)-7.5)/.09)*.28);
     for(const s of lanterns){
       s.pivot.rotation.z=-lanternAngle(s,t,s.hoveredAt);
       const b=1+.016*Math.sin(t*1.7+s.offset);
@@ -62,7 +79,7 @@ export function createLivingScene({THREE,scene,image,material,originalTexture}) 
     }
   }
   function react(id){const s=lanterns.find(s=>s.id===id);if(s)s.hoveredAt=clock;}
-  function snapshot(){return {enabled,clock,prepared:true,lanterns:lanterns.map(s=>({id:s.id,angle:s.pivot.rotation.z,pivot:[...s.pivot.position],rect:s.rect})),flames:flames.length,rainCount:count};}
-  function dispose(){scene.remove(root);for(const r of resources)r.dispose();}
-  return {enable,update,react,snapshot,dispose,prepared};
+  function snapshot(){return {enabled,clock,prepared:true,lanterns:lanterns.map(s=>({id:s.id,angle:s.pivot.rotation.z,pivot:[...s.pivot.position],rect:s.rect})),flames:flames.length,rainCount:count,foliage:foliage.snapshot(),atmosphere:atmosphere.snapshot(),cat:cat?.snapshot()||null};}
+  function dispose(){cat?.dispose();foliage.dispose();atmosphere.dispose();scene.remove(root);for(const r of resources)r.dispose();}
+  return {enable,update,react,snapshot,dispose,prepared,greet:()=>cat?.greet(),catPose:()=>cat?.snapshot()};
 }
