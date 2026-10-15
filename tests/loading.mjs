@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
-const report={requests:[],checks:[]};
+const report={requests:[],checks:[],errors:[]};
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader']});
 try {
   const context=await browser.newContext({viewport:{width:1440,height:900}});
@@ -19,9 +19,12 @@ try {
     catch {await route.fulfill({status:404,body:'Not found'});}
   });
   const page=await context.newPage();
+  page.on('pageerror',error=>report.errors.push(error.message));
+  page.on('console',message=>{if(message.type()==='error')report.errors.push(message.text());});
   await page.goto('http://street.test/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.__gatewayTest?.snapshot().renderer==='webgl');
+  await page.waitForFunction(()=>window.__gatewayTest&&window.__gatewayTest.snapshot().renderer!=='loading');
   const first=await page.evaluate(()=>window.__gatewayTest.snapshot());
+  assert.equal(first.renderer,'webgl',first.reason);
   assert.equal(first.mode,'live');assert.equal(first.motion.cat.model,'loading');
   report.checks.push('Live cloth, mist and neon start without waiting for the cat');
   assert.ok(!report.requests.some(path=>/street-master|street-clean|foliage-background|cloth-background|curtains-alpha|somali-cat/.test(path)));

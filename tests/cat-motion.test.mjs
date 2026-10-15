@@ -183,7 +183,8 @@ test('seven drip origins have staggered sparse bursts and their own impact posit
   }
 });
 test('drain spout connects to the roof collector and wall hardware, with an aligned open outlet',async()=>{
-  const THREE=await import('three');
+  const THREE=await import('../assets/v25/three-vendor.js');
+  assert.equal(typeof THREE.Vector4,'function');
   const parent=new THREE.Group();
   const gutter=createGutter({THREE,parent});
   const root=parent.getObjectByName('GutterAndBowl');
