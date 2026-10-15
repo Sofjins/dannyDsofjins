@@ -41,6 +41,21 @@ jobs:
           GATEWAY_PREVIEW_LOG=1 npm run test:browser
           python tests/gateway_reference.py --require-webgl
           python tests/gateway_living.py
+      - name: Bake registered live-scene assets
+        if: always()
+        run: |
+          node tests/bake-scene.mjs
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import base64
+          root=Path('test-results/baked')
+          for name,quality in [('base',91),('props',91),('poster',76)]:
+              target=root/(name+'.webp')
+              Image.open(root/(name+'.png')).save(target,quality=quality,method=6)
+              print('BAKED_'+name.upper()+'_BASE64='+base64.b64encode(target.read_bytes()).decode())
+          print('BAKED_MANIFEST_JSON='+root.joinpath('manifest.json').read_text())
+          PY
       - name: Inspect the public Coolify deployment without blocking local regression results
         if: always()
         run: node tests/deployed-street.mjs

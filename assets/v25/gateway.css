@@ -11,8 +11,8 @@ body[data-world="gateway"] .header-contact{font:500 10px system-ui,sans-serif;le
 body[data-world="gateway"] .status-dot{width:5px;height:5px;box-shadow:none}
 .gateway-experience{position:relative;inset:auto;background:#080b0e;isolation:isolate;height:100svh;min-height:0;overflow:hidden;font-family:system-ui,sans-serif}
 .reference-stage{position:absolute;inset:0;overflow:hidden;isolation:isolate;touch-action:pan-y}
-.reference-surround{position:absolute;inset:0;pointer-events:none;background:#080b0e url('./street-surround-wide.webp') center/auto 100% no-repeat}
-.reference-surround[data-axis="portrait"]{background-image:url('./street-surround-portrait-v2.webp')}
+.reference-surround{position:absolute;inset:0;pointer-events:none;background:#080b0e url('./street-environment-wide.webp') center/auto 100% no-repeat}
+.reference-surround[data-axis="portrait"]{background-image:url('./street-environment-portrait.webp')}
 .viewport-mist{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
 .viewport-mist[hidden]{display:none}
 .gateway-experience[data-mode="live"] .reference-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse var(--focus-width,68vw) var(--focus-height,72svh) at 50% 54%,transparent 46%,#02070c55 85%,#02070cb0 125%)}

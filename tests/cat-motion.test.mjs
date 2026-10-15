@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { catPose, createCatBehavior, CAT_GROUND, CAT_BOX_TOP } from '../assets/v25/cat-motion.js';
-import { dripState, DRIP_CYCLE, DRIP_STARTS, FALL_TIME, BOWL } from '../assets/v25/gutter.js';
+import { neonLevels } from '../assets/v25/neon.js';
+import { environmentTransform } from '../assets/v25/environment.js';
+import { DRIP_EMITTERS, dripState, DRIP_CYCLE, DRIP_STARTS, FALL_TIME, BOWL } from '../assets/v25/gutter.js';
 import { streetFraming } from '../assets/v25/framing.js';
 import { createWetStreet, STREET_SURFACE } from '../assets/v25/wet-street.js';
 
@@ -156,3 +158,38 @@ test('gutter releases just three separated drops and ripples only after contact'
     assert.equal(dripState(time, index).ripple, false);
   }
 });
+
+test('four faulty neon circuits have different timings while other tubes only breathe',()=>{
+  const base=neonLevels(2),coffee=neonLevels(2.4),commit=neonLevels(4.6),hub=neonLevels(5.5),japanese=neonLevels(6.2);
+  assert.ok(coffee[5]<.1&&base[5]>.9&&commit[3]<.2&&hub[1]<.4&&japanese[7]<.3);
+  for(let seconds=0;seconds<50;seconds+=.05) {
+    const levels=neonLevels(seconds);
+    assert.ok(levels.every(value=>value>=0&&value<=1.1));
+    for(const index of [0,2,4,6])assert.ok(levels[index]>.85);
+  }
+});
+test('five drip origins have staggered sparse bursts and their own impact positions',()=>{
+  assert.equal(DRIP_EMITTERS.length,5);
+  assert.equal(new Set(DRIP_EMITTERS.map(emitter=>emitter.cycle)).size,5);
+  for(const emitter of DRIP_EMITTERS)for(const [index,start] of emitter.starts.entries()){
+    assert.equal(dripState(start-.01,index,emitter).falling,false);
+    assert.equal(dripState(start+.01,index,emitter).falling,true);
+    assert.equal(dripState(start+2,index,emitter).y,emitter.target.y);
+  }
+});
+test('floor texture registration exactly matches the surrounding CSS image',()=>{
+  for(const horizontal of [true,false]){
+    const transform=environmentTransform(horizontal);
+    const width=1536,height=1024;
+    const backgroundWidth=horizontal?width*2:width;
+    const backgroundHeight=horizontal?height:width*2.25;
+    const left=(width-backgroundWidth)/2+(horizontal?width*30/1086:0);
+    const top=(height-backgroundHeight)/2+(horizontal?0:width*42/836);
+    for(const point of [[0,830],[1536,1024],[768,912]]){
+      const expected=[(point[0]-left)/backgroundWidth,1-(point[1]-top)/backgroundHeight];
+      const actual=[point[0]/width*transform[0]+transform[2],(1-point[1]/height)*transform[1]+transform[3]];
+      assert.ok(Math.abs(expected[0]-actual[0])<1e-9&&Math.abs(expected[1]-actual[1])<1e-9);
+    }
+  }
+});
+

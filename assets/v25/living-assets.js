@@ -1,9 +1,11 @@
-import { FOLIAGE } from './foliage.js?v=living-street-6';
-import { CURTAINS } from './curtains.js?v=living-street-6';
+import { FOLIAGE } from './foliage.js?v=living-street-7';
+import { CURTAINS } from './curtains.js?v=living-street-7';
 
 export const CLEAN_PATCHES = [[628, 678, 188, 114], [1090, 188, 145, 95], [1231, 112, 243, 205],
   [1106, 548, 216, 151], [1330, 312, 54, 223]];
 export const PAVEMENT_PATCH = [1215, 821, 110, 100];
+export const FOLIAGE_REPAIRS = [[552, 394, 184, 236], [680, 532, 66, 102], [720, 540, 156, 172]];
+export const CLOTH_PATCH = [285, 313, 324, 151];
 
 export const LANTERNS = [
   { id:'left', rect:[116,214,100,176], pivot:[164,224],
@@ -65,11 +67,12 @@ function restoreBehind(source, mask) {
   ctx.putImageData(result,0,0);return out;
 }
 
-export function prepareLivingAssets(image, cleanPlate, pavementPlate, foliageAtlas, foliagePlate) {
+export function prepareLivingAssets(image, cleanPlate, pavementPlate, foliageAtlas, foliagePlate, curtainAtlas, clothPlate) {
   const clean=makeCanvas(1536,1024),cc=clean.getContext('2d');cc.drawImage(image,0,0);
   const patches = cleanPlate ? CLEAN_PATCHES.map(rect => ({ rect, source: cleanPlate })) : [];
   if (pavementPlate) patches.push({ rect: PAVEMENT_PATCH, source: pavementPlate });
-  for (const { rect: [left, top, width, height], source } of patches) {
+  if (foliagePlate) patches.push(...FOLIAGE_REPAIRS.map(rect => ({ rect, source: foliagePlate })));
+  const paintPatch=({rect:[left,top,width,height],source})=>{
     const patch = makeCanvas(width, height);
     const context = patch.getContext('2d');
     context.drawImage(source, left, top, width, height, 0, 0, width, height);
@@ -80,7 +83,8 @@ export function prepareLivingAssets(image, cleanPlate, pavementPlate, foliageAtl
     }
     context.putImageData(pixels, 0, 0);
     cc.drawImage(patch, left, top);
-  }
+  };
+  patches.forEach(paintPatch);
   const cut = (spec) => {
     const [x,y,w,h]=spec.rect,source=makeCanvas(w,h),sc=source.getContext('2d');
     sc.drawImage(image,x,y,w,h,0,0,w,h);
@@ -114,7 +118,20 @@ export function prepareLivingAssets(image, cleanPlate, pavementPlate, foliageAtl
     return { ...spec, texture, plate, isolated: true, alphaOccupancy: occupied / (width * height) };
   };
   const foliage=FOLIAGE.map(foliageAtlas && foliagePlate ? isolatePlant : cut);
-  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut), curtains=CURTAINS.map(cut);
+  if(clothPlate)paintPatch({rect:CLOTH_PATCH,source:clothPlate});
+  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut);
+  const curtains=CURTAINS.map(spec => {
+    if (!curtainAtlas || !clothPlate) return cut(spec);
+    const texture=makeCanvas(spec.rect[2],spec.rect[3]),context=texture.getContext('2d');
+    context.drawImage(curtainAtlas,...spec.atlasRect,0,0,texture.width,texture.height);
+    const pixels=context.getImageData(0,0,texture.width,texture.height);
+    for (let offset=3;offset<pixels.data.length;offset+=4) {
+      const alpha=pixels.data[offset];
+      pixels.data[offset]=alpha<16?0:Math.min(255,(alpha-16)*255/235);
+    }
+    context.putImageData(pixels,0,0);
+    return {...spec,texture,isolated:true};
+  });
   return {clean,lanterns,flames,foliage,curtains,catRemoved:Boolean(cleanPlate)};
 }
 

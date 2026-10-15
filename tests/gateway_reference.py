@@ -64,9 +64,9 @@ def load(page, *, block_gl=False):
         page.add_script_tag(content=(ROOT/'assets/site.js').read_text())
         module=(ROOT/'assets/v25/main.js').read_text()
         framing=(ROOT/'assets/v25/framing.js').read_text().replace('export function','function')
-        module=module.replace("import { streetFraming } from './framing.js?v=living-street-6';",framing)
+        module=module.replace("import { streetFraming } from './framing.js?v=living-street-7';",framing)
         water=(ROOT/'assets/v25/water-light.js').read_text().replace('export const','const')
-        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-6';",water)
+        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-7';",water)
         page.add_script_tag(type='module', content=module)
     else:
         # Use exactly the production-pinned Three.js package, served locally for deterministic CI.

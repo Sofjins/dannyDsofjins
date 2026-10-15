@@ -40,9 +40,9 @@ try {
   verify('cat uses the authored rig and animation clips', initial.motion.cat.model === 'authored-gltf' && initial.motion.cat.joints >= 30 && initial.motion.cat.clips.includes('WalkClean'));
   verify('nine separate foliage groups', initial.motion.foliage.count === 9);
   verify('plants use leaf-only alpha sprites, not rectangular wall cutouts', initial.motion.foliage.isolatedAlpha && initial.motion.foliage.alphaOccupancy.every(([name, occupancy]) => occupancy > .03 && occupancy < .85), initial.motion.foliage.alphaOccupancy);
-  verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored);
+  verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored && initial.motion.curtains.isolatedAlpha);
   verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.rainCount === 0);
-  verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6);
+  verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6 && initial.motion.gutter.emitters.length === 5);
   verify('cat has its own planar reflection and cast shadows', initial.motion.pavement.reflection === 'planar-skinned-mesh' && initial.motion.pavement.shadows === 'pcf-cast-and-contact');
   verify('short black coat and reduced tail', initial.motion.cat.coat === 'black-short-fur' && initial.motion.cat.tailScale[0] < .6);
   verify('mist reaches the viewport, not only the source artwork', await page.locator('.viewport-mist').count() === 1);
@@ -147,7 +147,7 @@ try {
   verify('mobile close view works', await page.evaluate(() => window.__gatewayTest.snapshot().view === 'software'));
   await page.screenshot({ path: resolve(output, 'street-mobile.png'), fullPage: true });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForTimeout(120);
+  await page.waitForFunction(()=>window.__gatewayTest.snapshot().mode==='reference');
   verify('reduced motion restores still artwork', await page.evaluate(() => window.__gatewayTest.snapshot().mode === 'reference'));
   verify('cat hotspot hides in still mode', await page.locator('.living-cat-target').isHidden());
   const fallback = await context.newPage();
@@ -170,6 +170,7 @@ try {
   await page.screenshot({ path: resolve(output, 'street-fullscreen-uncropped.png') });
   if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`WIDE_PREVIEW_BASE64=${(await page.screenshot({ type: 'jpeg', quality: 75 })).toString('base64')}`);
   await page.setViewportSize({ width: 1024, height: 1365 });
+  await page.waitForFunction(()=>document.querySelector('#gateway-experience').dataset.environment==='portrait');
   await page.waitForTimeout(250);
   await page.screenshot({ path: resolve(output, 'street-tall-environment.png') });
   if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`TALL_PREVIEW_BASE64=${(await page.screenshot({ type: 'jpeg', quality: 80 })).toString('base64')}`);

@@ -2,15 +2,17 @@
  * Scene coordinates are the approved artwork's pixels (1536 x 1024).
  * This module enhances the existing static application; no server/build change required.
  */
-import { streetFraming } from './framing.js?v=living-street-6';
-import { waterLightShader } from './water-light.js?v=living-street-6';
+import { streetFraming } from './framing.js?v=living-street-7';
+import { waterLightShader } from './water-light.js?v=living-street-7';
+import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-7';
+import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-7';
 
 const root = document.getElementById('gateway-experience');
 if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-6';
+  const VERSION = 'living-street-7';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -23,10 +25,28 @@ function boot(root) {
     disposed: false, width: 0, height: 0, reason: null };
   let THREE, renderer, scene, camera, material, plane, raycaster, living, catTarget, viewportMist;
   let elapsed = 0, testTime = null;
+  const environments = new Map();
+  let environmentAxis = null;
+  async function selectEnvironment(horizontal) {
+    if (!THREE) return;
+    const axis = horizontal ? 'wide' : 'portrait';
+    environmentAxis = axis;
+    if (!environments.has(axis)) environments.set(axis,new THREE.TextureLoader().loadAsync(new URL(`./street-environment-${axis}.webp`,import.meta.url).href).then(texture=>{
+      texture.colorSpace=THREE.SRGBColorSpace; texture.generateMipmaps=false;
+      texture.minFilter=texture.magFilter=THREE.LinearFilter;resources.push(texture);return texture;
+    }));
+    const texture=await environments.get(axis);
+    if(state.disposed || environmentAxis!==axis)return;
+    uniforms.uEnvironment.value=texture;
+    uniforms.uEnvironmentTransform.value=environmentTransform(horizontal);
+    root.dataset.environment=axis;living?.setPortrait(!horizontal);schedule();
+  }
   const pickMeshes = [];
   const resources = [];
   const listeners = [];
   const uniforms = {
+    uEnvironment: { value:null },uEnvironmentTransform:{value:environmentTransform(true)},
+    uNeonA:{value:[1,1,1,1]},uNeonB:{value:[1,1,1,1]},
     uClock: { value: 0 }, uLive: { value: 0 }, uMagic: { value: 0 }, uSoftware: { value: 0 },
   };
   const on = (el, event, fn, opts) => {
@@ -96,6 +116,7 @@ function boot(root) {
     const direction = framing.horizontal ? 'right' : 'bottom';
     art.style.maskImage = framing.feather ? `linear-gradient(to ${direction},transparent,#000 ${framing.feather}px,#000 calc(100% - ${framing.feather}px),transparent)` : 'none';
     surround.dataset.axis = framing.horizontal ? 'wide' : 'portrait';
+    if (THREE && environmentAxis !== surround.dataset.axis) selectEnvironment(framing.horizontal).catch(()=>{});
     surround.style.backgroundSize = `${framing.surroundWidth}px ${framing.surroundHeight}px`;
     surround.style.backgroundPosition = framing.horizontal ? `calc(50% + ${aw * 30 / 1086}px) center` : `center calc(50% + ${aw * 42 / 836}px)`;
     stage.style.setProperty('--focus-width', `${aw * .68}px`);
@@ -211,6 +232,7 @@ function boot(root) {
     state.magic += (targetMagic - state.magic) * k;
     state.software += (targetSoftware - state.software) * k;
     uniforms.uClock.value = clock;
+    const neon=neonLevels(clock);uniforms.uNeonA.value=neon.slice(0,4);uniforms.uNeonB.value=neon.slice(4);
     uniforms.uMagic.value = state.magic; uniforms.uSoftware.value = state.software;
     renderer.render(scene, camera);
     viewportMist?.update(clock, testTime !== null);
@@ -245,8 +267,8 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('./three-vendor.js?v=living-street-6');
-      await still.decode();
+      THREE = await import('./three-vendor.js?v=living-street-7');
+      await Promise.all([still.decode(),selectEnvironment(stage.clientWidth/stage.clientHeight>=1.5)]);
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -269,6 +291,8 @@ function boot(root) {
         Object.assign(shader.uniforms, uniforms);
         shader.fragmentShader = `
           uniform float uClock, uLive, uMagic, uSoftware;
+          ${neonFunctions}
+          ${environmentFunctions}
           float lightMask(vec2 p, vec2 c, vec2 r) {
             return 1.0 - smoothstep(0.15, 1.0, length((p-c)/r));
           }
@@ -276,6 +300,7 @@ function boot(root) {
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `
           #include <map_fragment>
           vec2 px = vec2(vMapUv.x * 1536.0, (1.0-vMapUv.y) * 1024.0);
+          if(uLive>.5)diffuseColor.rgb=mix(diffuseColor.rgb,environmentColor(vMapUv),smoothstep(795.0,831.0,px.y));
           float warm = clamp((diffuseColor.r - diffuseColor.b) * 6.0, 0.0, 1.0);
           float cool = clamp(max(diffuseColor.b, diffuseColor.g) * 6.0 - diffuseColor.r, 0.0, 1.0);
           float flicker = 0.0;
@@ -287,28 +312,11 @@ function boot(root) {
           flicker += lightMask(px,vec2(670.0,301.0),vec2(110.0,125.0)) * (sin(uClock*1.7+2.2)*.12+sin(uClock*6.9+6.6)*.04);
           flicker += lightMask(px,vec2(782.0,389.0),vec2(30.0,58.0)) * (.24*sin(uClock*2.8)+.12*sin(uClock*8.9)-.75*(1.0-smoothstep(.03,.11,abs(mod(uClock,13.7)-6.1))));
           flicker += lightMask(px,vec2(64.0,69.0),vec2(49.0,84.0)) * (.27*sin(uClock*1.6)+.10*sin(uClock*10.7)-1.1*(1.0-smoothstep(.04,.13,abs(mod(uClock,18.1)-9.3))));
-          float neon = lightMask(px,vec2(1044.0,238.0),vec2(190.0,44.0)) * sin(uClock*2.3) * .065;
-          float coffeeTime = mod(uClock,11.7);
-          float dipB = (1.0-smoothstep(.08,.13,abs(coffeeTime-2.4)))
-            +(1.0-smoothstep(.035,.075,abs(coffeeTime-2.82)))
-            +(1.0-smoothstep(.23,.29,abs(coffeeTime-3.4)))
-            +(1.0-smoothstep(.04,.09,abs(coffeeTime-7.9)));
-          float dipA = 1.0-smoothstep(.08,.15,abs(mod(uClock,9.1)-4.6));
-          neon += lightMask(px,vec2(1360.0,161.0),vec2(82.0,24.0)) * (.13*sin(uClock*2.7)-.8*(1.0-smoothstep(.05,.12,abs(mod(uClock,14.3)-5.7))));
-          neon += lightMask(px,vec2(1360.0,210.0),vec2(84.0,24.0)) * (.10*sin(uClock*2.1+2.0)-dipA*1.7);
-          neon += lightMask(px,vec2(1360.0,258.0),vec2(84.0,23.0)) * (.12*sin(uClock*1.8+4.0)-.95*(1.0-smoothstep(.06,.14,abs(mod(uClock,12.9)-8.4))));
-          neon -= lightMask(px,vec2(1164.0,611.0),vec2(44.0,54.0)) * dipB * 4.5;
-          neon += lightMask(px,vec2(1164.0,668.0),vec2(38.0,27.0)) * sin(uClock*1.9+3.0) * .12;
-          neon += lightMask(px,vec2(1360.0,398.0),vec2(24.0,78.0)) * (.16*sin(uClock*1.3)-.85*(1.0-smoothstep(.08,.16,abs(mod(uClock,16.7)-6.2))));
-          neon -= lightMask(px,vec2(1170.0,234.0),vec2(59.0,34.0)) * (1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5))) * .8;
-          float hubDip = 1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5));
-          neon -= lightMask(px,vec2(1115.0,893.0),vec2(126.0,112.0)) * hubDip * .15;
-          neon -= lightMask(px,vec2(1280.0,875.0),vec2(88.0,96.0)) * dipB * .48;
-          flicker += lightMask(px,vec2(410.0,858.0),vec2(163.0,99.0)) * sin(uClock*5.3+1.8) * .055;
-          float gain = uLive * (warm*flicker + cool*neon);
+          float gain = uLive * warm * flicker;
           gain += uMagic * lightMask(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
           gain += uSoftware * lightMask(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
           diffuseColor.rgb *= exp2(gain);
+          ${neonShader}
           ${waterLightShader}
         `);
       };
@@ -330,18 +338,22 @@ function boot(root) {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
       const cleanPlate = new Image();
-      cleanPlate.src = new URL('./street-clean.webp?v=living-street-6', import.meta.url).href;
+      cleanPlate.src = new URL('./street-clean.webp?v=living-street-7', import.meta.url).href;
       const pavementPlate = new Image();
-      pavementPlate.src = new URL('./street-pavement-clean.webp?v=living-street-6', import.meta.url).href;
+      pavementPlate.src = new URL('./street-pavement-clean.webp?v=living-street-7', import.meta.url).href;
       const foliageAtlas = new Image(), foliagePlate = new Image();
-      foliageAtlas.src = new URL('./foliage-alpha.webp?v=living-street-6', import.meta.url).href;
-      foliagePlate.src = new URL('./foliage-background.webp?v=living-street-6', import.meta.url).href;
-      await Promise.all([cleanPlate.decode(), pavementPlate.decode(), foliageAtlas.decode(), foliagePlate.decode()]);
+      foliageAtlas.src = new URL('./foliage-alpha.webp?v=living-street-7', import.meta.url).href;
+      foliagePlate.src = new URL('./foliage-background.webp?v=living-street-7', import.meta.url).href;
+      const curtainAtlas=new Image(),clothPlate=new Image();
+      curtainAtlas.src=new URL('./curtains-alpha.webp',import.meta.url).href;
+      clothPlate.src=new URL('./cloth-background.webp',import.meta.url).href;
+      await Promise.all([cleanPlate.decode(), pavementPlate.decode(), foliageAtlas.decode(), foliagePlate.decode(),curtainAtlas.decode(),clothPlate.decode()]);
       if (state.disposed) return;
-      const { createLivingScene } = await import('./living-scene.js?v=living-street-6');
-      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate, pavementPlate, foliageAtlas, foliagePlate });
+      const { createLivingScene } = await import('./living-scene.js?v=living-street-7');
+      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate, pavementPlate, foliageAtlas, foliagePlate,curtainAtlas,clothPlate });
+      living.setPortrait(environmentAxis==='portrait');
       try {
-        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-6');
+        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-7');
         viewportMist = createViewportMist({ THREE, stage });
       } catch { viewportMist = null; }
       catTarget = el('button', 'living-cat-target');
@@ -385,6 +397,17 @@ function boot(root) {
   // Read-only diagnostics plus explicit controls for repeatable browser regression tests.
   window.__gatewayTest = Object.freeze({
     version: VERSION, setMode, setView, raycastAt,
+    exportPrepared:()=>{
+      const prepared=living.prepared,atlas=document.createElement('canvas');atlas.width=1280;atlas.height=1120;
+      const context=atlas.getContext('2d'),manifest={};let slot=0;
+      for(const group of ['lanterns','flames','foliage','curtains'])manifest[group]=prepared[group].map(spec=>{
+        const column=slot%4,row=Math.floor(slot++/4);context.drawImage(spec.texture,column*320,row*224);
+        const {texture,plate,mask,...metadata}=spec;
+        return {...metadata,packed:[column*320,row*224,spec.rect[2],spec.rect[3]]};
+      });
+      return {base:prepared.clean.toDataURL(),props:atlas.toDataURL(),manifest};
+    },
+    setCatVisible:value=>living?.setCatVisible(value),
     seek: seconds => { testTime = Number.isFinite(seconds) ? Math.max(0,seconds) : null; schedule(); },
     nudgeLantern: id => { living?.react(id); schedule(); },
     greetCat: () => { living?.greet(); schedule(); },

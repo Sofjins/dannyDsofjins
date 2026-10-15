@@ -68,6 +68,7 @@ export function createFoliage({ THREE, parent, prepared, texture }) {
   }
   return {
     update,
+    setPortrait(value) { const foreground=leaves.find(leaf=>leaf.spec.id==='foreground-garden'); if(foreground)foreground.mesh.visible=!value; },
     snapshot: () => ({ count: leaves.length, anchored: true, maxDisplacement: 7.8,
       isolatedAlpha: leaves.every(leaf => leaf.spec.isolated), alphaOccupancy: leaves.map(leaf => [leaf.spec.id, leaf.spec.alphaOccupancy]),
       objects: leaves.map(leaf => leaf.spec.id) }),
