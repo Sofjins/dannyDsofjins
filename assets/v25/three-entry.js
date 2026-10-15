@@ -1,6 +1,6 @@
 export {
   AmbientLight, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color,
-  DirectionalLight, DoubleSide, DynamicDrawUsage, EllipseCurve, Float32BufferAttribute,
+  DataTexture, DirectionalLight, DoubleSide, DynamicDrawUsage, EllipseCurve, EquirectangularReflectionMapping, Float32BufferAttribute,
   Group, HemisphereLight, Line, LineBasicMaterial, LinearFilter, LineSegments,
   MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, MeshPhysicalMaterial, NoToneMapping,
   OrthographicCamera, PlaneGeometry, PointLight, Quaternion, Raycaster,
