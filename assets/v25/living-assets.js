@@ -1,5 +1,5 @@
-import { FOLIAGE } from './foliage.js?v=living-street-5';
-import { CURTAINS } from './curtains.js?v=living-street-5';
+import { FOLIAGE } from './foliage.js?v=living-street-6';
+import { CURTAINS } from './curtains.js?v=living-street-6';
 
 export const CLEAN_PATCHES = [[628, 678, 188, 114], [1090, 188, 145, 95], [1231, 112, 243, 205],
   [1106, 548, 216, 151], [1330, 312, 54, 223]];
@@ -65,7 +65,7 @@ function restoreBehind(source, mask) {
   ctx.putImageData(result,0,0);return out;
 }
 
-export function prepareLivingAssets(image, cleanPlate, pavementPlate) {
+export function prepareLivingAssets(image, cleanPlate, pavementPlate, foliageAtlas, foliagePlate) {
   const clean=makeCanvas(1536,1024),cc=clean.getContext('2d');cc.drawImage(image,0,0);
   const patches = cleanPlate ? CLEAN_PATCHES.map(rect => ({ rect, source: cleanPlate })) : [];
   if (pavementPlate) patches.push({ rect: PAVEMENT_PATCH, source: pavementPlate });
@@ -90,7 +90,31 @@ export function prepareLivingAssets(image, cleanPlate, pavementPlate) {
     tc.globalCompositeOperation='destination-in';tc.drawImage(mask,0,0);
     return {...spec,texture,plate,mask};
   };
-  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut), foliage=FOLIAGE.map(cut), curtains=CURTAINS.map(cut);
+  const isolatePlant = spec => {
+    const [left, top, width, height] = spec.rect;
+    const plate = makeCanvas(width, height), plateContext = plate.getContext('2d');
+    plateContext.drawImage(foliagePlate, left, top, width, height, 0, 0, width, height);
+    const backdrop = plateContext.getImageData(0, 0, width, height);
+    for (let row = 0; row < height; row++) for (let column = 0; column < width; column++) {
+      const edge = Math.min(left === 0 ? 20 : column, top === 0 ? 20 : row,
+        width - 1 - column, top + height === 1024 ? 20 : height - 1 - row);
+      backdrop.data[(row * width + column) * 4 + 3] = Math.min(255, edge / 3 * 255);
+    }
+    plateContext.putImageData(backdrop, 0, 0); cc.drawImage(plate, left, top);
+    const texture = makeCanvas(width, height), context = texture.getContext('2d');
+    context.drawImage(foliageAtlas, ...spec.atlasRect, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height);
+    let occupied = 0;
+    for (let offset = 3; offset < pixels.data.length; offset += 4) {
+      const alpha = pixels.data[offset];
+      pixels.data[offset] = alpha < 12 ? 0 : Math.min(255, (alpha - 12) * 255 / 239);
+      if (pixels.data[offset] > 12) occupied++;
+    }
+    context.putImageData(pixels, 0, 0);
+    return { ...spec, texture, plate, isolated: true, alphaOccupancy: occupied / (width * height) };
+  };
+  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut);
+  const foliage=FOLIAGE.map(foliageAtlas && foliagePlate ? isolatePlant : cut), curtains=CURTAINS.map(cut);
   return {clean,lanterns,flames,foliage,curtains,catRemoved:Boolean(cleanPlate)};
 }
 

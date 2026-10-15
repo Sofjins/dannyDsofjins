@@ -2,15 +2,15 @@
  * Scene coordinates are the approved artwork's pixels (1536 x 1024).
  * This module enhances the existing static application; no server/build change required.
  */
-import { streetFraming } from './framing.js?v=living-street-5';
-import { waterLightShader } from './water-light.js?v=living-street-5';
+import { streetFraming } from './framing.js?v=living-street-6';
+import { waterLightShader } from './water-light.js?v=living-street-6';
 
 const root = document.getElementById('gateway-experience');
 if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-5';
+  const VERSION = 'living-street-6';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -97,7 +97,7 @@ function boot(root) {
     art.style.maskImage = framing.feather ? `linear-gradient(to ${direction},transparent,#000 ${framing.feather}px,#000 calc(100% - ${framing.feather}px),transparent)` : 'none';
     surround.dataset.axis = framing.horizontal ? 'wide' : 'portrait';
     surround.style.backgroundSize = `${framing.surroundWidth}px ${framing.surroundHeight}px`;
-    surround.style.backgroundPosition = framing.horizontal ? `calc(50% + ${aw * 32 / 1086}px) center` : `center calc(50% + ${aw * 42 / 836}px)`;
+    surround.style.backgroundPosition = framing.horizontal ? `calc(50% + ${aw * 30 / 1086}px) center` : `center calc(50% + ${aw * 42 / 836}px)`;
     stage.style.setProperty('--focus-width', `${aw * .68}px`);
     stage.style.setProperty('--focus-height', `${ah * .72}px`);
     if (renderer && (Math.abs(aw - state.width) > .1 || Math.abs(ah - state.height) > .1)) {
@@ -245,7 +245,7 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('./three-vendor.js?v=living-street-5');
+      THREE = await import('./three-vendor.js?v=living-street-6');
       await still.decode();
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
@@ -255,8 +255,8 @@ function boot(root) {
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.setClearColor(0x080b0e, 1);
       scene = new THREE.Scene();
-      camera = new THREE.OrthographicCamera(0, W, H, 0, .1, 2500);
-      camera.position.set(0, 0, 1200);
+      camera = new THREE.OrthographicCamera(-W / 2, W / 2, H / 2, -H / 2, .1, 2500);
+      camera.position.set(W / 2, H / 2, 1200);
       camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
       const texture = new THREE.Texture(still);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -330,15 +330,18 @@ function boot(root) {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
       const cleanPlate = new Image();
-      cleanPlate.src = new URL('./street-clean.webp?v=living-street-5', import.meta.url).href;
+      cleanPlate.src = new URL('./street-clean.webp?v=living-street-6', import.meta.url).href;
       const pavementPlate = new Image();
-      pavementPlate.src = new URL('./street-pavement-clean.webp?v=living-street-5', import.meta.url).href;
-      await Promise.all([cleanPlate.decode(), pavementPlate.decode()]);
+      pavementPlate.src = new URL('./street-pavement-clean.webp?v=living-street-6', import.meta.url).href;
+      const foliageAtlas = new Image(), foliagePlate = new Image();
+      foliageAtlas.src = new URL('./foliage-alpha.webp?v=living-street-6', import.meta.url).href;
+      foliagePlate.src = new URL('./foliage-background.webp?v=living-street-6', import.meta.url).href;
+      await Promise.all([cleanPlate.decode(), pavementPlate.decode(), foliageAtlas.decode(), foliagePlate.decode()]);
       if (state.disposed) return;
-      const { createLivingScene } = await import('./living-scene.js?v=living-street-5');
-      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate, pavementPlate });
+      const { createLivingScene } = await import('./living-scene.js?v=living-street-6');
+      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate, pavementPlate, foliageAtlas, foliagePlate });
       try {
-        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-5');
+        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-6');
         viewportMist = createViewportMist({ THREE, stage });
       } catch { viewportMist = null; }
       catTarget = el('button', 'living-cat-target');

@@ -16,7 +16,7 @@ export function createViewportMist({ THREE, stage }) {
       varying vec2 screenUv;
       float hash(vec2 point) { return fract(sin(dot(point,vec2(127.1,311.7))) * 43758.5453); }
       float noise(vec2 point) {
-        vec2 cell=floor(point), blend=fract(point); blend=blend*blend*(3.0-2.0*blend);
+        vec2 cell=floor(point), blend=fract(point); blend=blend*blend*blend*(blend*(blend*6.0-15.0)+10.0);
         return mix(mix(hash(cell),hash(cell+vec2(1.0,0.0)),blend.x),mix(hash(cell+vec2(0.0,1.0)),hash(cell+1.0),blend.x),blend.y);
       }
       float cloud(vec2 point) {
@@ -24,8 +24,8 @@ export function createViewportMist({ THREE, stage }) {
       }
       void main() {
         vec2 pixel = (vec2(screenUv.x, 1.0-screenUv.y)*viewport-artOrigin)/artScale;
-        vec2 drift = pixel * vec2(.0035, .006) + vec2(-clock*.017, clock*.004);
-        float curl = cloud(drift*.6+vec2(clock*.009,0.0));
+        vec2 drift = pixel * vec2(.0035, .006) + vec2(-clock*.065, clock*.008);
+        float curl = cloud(drift*.6+vec2(clock*.014,0.0));
         float vapor = smoothstep(.40,.76,cloud(drift+vec2(curl*1.4,curl*.5)));
         float lowMist = exp(-pow((pixel.y-825.0)/220.0,2.0));
         float outside = 1.0-smoothstep(-150.0,30.0,pixel.y);
@@ -53,7 +53,7 @@ export function createViewportMist({ THREE, stage }) {
     },
     enable(value) { enabled = value; canvas.hidden = !value; last = -1; },
     update(seconds, force = false) {
-      if (!enabled || !force && Math.abs(seconds-last) < .045) return;
+      if (!enabled || !force && Math.abs(seconds-last) < .029) return;
       last = seconds; uniforms.clock.value = seconds; renderer.render(scene, camera);
     },
     dispose() { geometry.dispose(); material.dispose(); renderer.dispose(); canvas.remove(); }

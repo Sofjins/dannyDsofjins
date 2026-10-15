@@ -89,7 +89,7 @@ export function createWetStreet({ THREE, parent, texture }) {
   shadow.position.copy(reflector.position); shadow.rotation.copy(reflector.rotation);
   shadow.receiveShadow = true; shadow.renderOrder = 3; parent.add(shadow);
   const key = new THREE.DirectionalLight(0xffd3aa, 1.5);
-  key.position.set(350, 900, 600);
+  key.position.set(350, 900, -100);
   key.target.position.set(780, 250, 105);
   key.castShadow = true;
   Object.assign(key.shadow.camera, { left: -850, right: 850, top: 500, bottom: -500, near: 1, far: 1800 });

@@ -1,3 +1,15 @@
+const ATLAS_RECTS = {
+  'hanging-ivy': [553, 0, 150, 155],
+  'magic-maple': [548, 398, 193, 226],
+  'bowl-plant': [721, 556, 169, 158],
+  'left-fern': [0, 395, 210, 190],
+  'hub-vine': [1365, 367, 159, 318],
+  'left-low-fern': [0, 575, 150, 110],
+  'doorway-fern': [210, 613, 146, 120],
+  'lantern-pot': [575, 593, 143, 111],
+  'foreground-garden': [0, 850, 390, 174]
+};
+
 export const FOLIAGE = [
   { id: 'hanging-ivy', rect: [558, 0, 138, 152], pivot: [590, 0], anchor: 'top', amplitude: 5.8, phase: .7,
     path: 'M559 0 L668 0 L682 18 L676 37 L692 53 L680 72 L695 91 L679 107 L686 129 L666 151 L654 127 L647 102 L620 89 L610 65 L580 58 L564 37 Z' },
@@ -17,7 +29,7 @@ export const FOLIAGE = [
     path: 'M634 697 L615 685 L599 687 L604 672 L590 663 L604 647 L593 635 L614 628 L620 610 L634 626 L650 602 L661 620 L679 632 L665 649 L679 663 L655 671 L652 688 Z' },
   { id: 'foreground-garden', rect: [70, 835, 270, 189], pivot: [166, 1023], amplitude: 3.8, phase: 7.2, feather: 12,
     path: 'M76 1023 C79 985 75 947 87 917 C78 886 94 854 111 857 C125 846 143 865 151 881 C170 871 181 887 188 904 C204 887 222 901 230 923 C254 907 277 923 282 943 C310 937 328 960 332 985 L331 1023 Z' }
-];
+].map(spec => ({ ...spec, atlasRect: ATLAS_RECTS[spec.id] }));
 
 export function createFoliage({ THREE, parent, prepared, texture }) {
   const resources = [];
@@ -29,6 +41,7 @@ export function createFoliage({ THREE, parent, prepared, texture }) {
     const original = new Float32Array(geometry.attributes.position.array);
     const material = new THREE.MeshBasicMaterial({ map: texture(spec.texture), transparent: true,
       depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+    if (spec.isolated) material.color.setRGB(.68, .72, .76);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(anchorX, 1024 - anchorY, spec.id === 'foreground-garden' ? 210 : 9);
     mesh.renderOrder = spec.id === 'foreground-garden' ? 18 : 4; parent.add(mesh);
@@ -55,7 +68,9 @@ export function createFoliage({ THREE, parent, prepared, texture }) {
   }
   return {
     update,
-    snapshot: () => ({ count: leaves.length, anchored: true, maxDisplacement: 7.8, objects: leaves.map(leaf => leaf.spec.id) }),
+    snapshot: () => ({ count: leaves.length, anchored: true, maxDisplacement: 7.8,
+      isolatedAlpha: leaves.every(leaf => leaf.spec.isolated), alphaOccupancy: leaves.map(leaf => [leaf.spec.id, leaf.spec.alphaOccupancy]),
+      objects: leaves.map(leaf => leaf.spec.id) }),
     dispose: () => { leaves.forEach(leaf => parent.remove(leaf.mesh)); resources.forEach(resource => resource.dispose()); }
   };
 }

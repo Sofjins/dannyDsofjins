@@ -39,6 +39,7 @@ try {
   verify('architecture remains a rigid plane', initial.vertices === 4 && initial.maxDepth === 0);
   verify('cat uses the authored rig and animation clips', initial.motion.cat.model === 'authored-gltf' && initial.motion.cat.joints >= 30 && initial.motion.cat.clips.includes('WalkClean'));
   verify('nine separate foliage groups', initial.motion.foliage.count === 9);
+  verify('plants use leaf-only alpha sprites, not rectangular wall cutouts', initial.motion.foliage.isolatedAlpha && initial.motion.foliage.alphaOccupancy.every(([name, occupancy]) => occupancy > .03 && occupancy < .85), initial.motion.foliage.alphaOccupancy);
   verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored);
   verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.rainCount === 0);
   verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6);
@@ -69,11 +70,13 @@ try {
     verify(`${label} moves independently`, difference(early, later, rectangle).maximum > 3);
   }
   verify('roof stays pixel-stable', difference(early, later, [240, 105, 270, 85]).maximum === 0);
+  verify('brick column beside the maple does not sway', difference(early, later, [726, 452, 18, 85]).maximum <= 2);
   verify('lantern pixels move', difference(early, later, [116, 214, 100, 176]).maximum > 5);
   verify('foliage pixels move', difference(early, later, [554, 448, 160, 150]).maximum > 3);
   verify('mist pixels evolve', difference(early, later, [250, 800, 300, 150]).maximum > 0);
   verify('curtain pixels move', difference(early, later, [290, 315, 310, 145]).maximum > 4);
   const reflected = await frame(90);
+  if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`SURFACE_PREVIEW_BASE64=${(await art.screenshot({ type: 'jpeg', quality: 80 })).toString('base64')}`);
   const catAt90 = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat);
   await page.evaluate(() => window.__gatewayTest.setSurfaceVisible(false));
   await page.waitForTimeout(120);

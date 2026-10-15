@@ -19,6 +19,18 @@ test('wet floor uses a tilted reflection camera and a real shadow receiver with 
   assert.equal(reflection.position.z, STREET_SURFACE.depth);
   assert.ok(Math.abs(Math.sin(-reflection.rotation.x) - .85) < .0001);
   assert.ok(parent.children.some(object => object.isDirectionalLight && object.castShadow));
+  const camera = new THREE.OrthographicCamera(-768, 768, 512, -512, .1, 2500);
+  camera.position.set(768, 512, 1200); camera.updateMatrixWorld(); parent.updateMatrixWorld(true);
+  let reflectedCamera;
+  const renderer = { xr: { enabled: false }, shadowMap: { autoUpdate: true },
+    getClearColor: color => color.set(0), getClearAlpha: () => 1, setClearColor() {},
+    getRenderTarget: () => null, setRenderTarget() {}, autoClear: true,
+    state: { buffers: { depth: { setMask() {} } } },
+    render: (scene, view) => { reflectedCamera = view; } };
+  reflection.onBeforeRender(renderer, parent, camera);
+  const reflectedHead = new THREE.Vector3(840, 320, 105).project(reflectedCamera);
+  assert.ok(Math.abs(reflectedHead.x) < 1 && Math.abs(reflectedHead.y) < 1 && Math.abs(reflectedHead.z) < 1);
+  assert.equal(reflectedCamera.layers.mask, 2);
   floor.update(41, { x: 800, surfaceY: 778 });
   assert.equal(reflection.material.uniforms.clock.value, 41);
   assert.deepEqual(reflection.material.uniforms.catPosition.value.toArray(), [800, 778]);
@@ -39,6 +51,7 @@ test('full street always fits without crop or distortion, with environment beyon
   const magic = streetFraming(390, 844, 'magic'), software = streetFraming(390, 844, 'software');
   assert.ok(magic.close && software.close);
   assert.ok(magic.left > software.left);
+  assert.ok(streetFraming(1710, 896).feather <= 6);
 });
 
 test('seeded behavior has long varied rests, both walking directions, drinking and crate visits', () => {

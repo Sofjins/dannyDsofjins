@@ -1,4 +1,4 @@
-import { createCatActor } from './cat-actor.js?v=living-street-5';
+import { createCatActor } from './cat-actor.js?v=living-street-6';
 
 export async function createStreetCat({ THREE, parent }) {
   const model = await new THREE.GLTFLoader().loadAsync(new URL('./models/somali-cat.glb', import.meta.url).href);

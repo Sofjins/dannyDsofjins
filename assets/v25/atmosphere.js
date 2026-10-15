@@ -17,7 +17,7 @@ export function createAtmosphere({ THREE, parent }) {
     }
     float noise(vec2 point) {
       vec2 cell = floor(point), fraction = fract(point);
-      fraction = fraction * fraction * (3.0 - 2.0 * fraction);
+      fraction = fraction * fraction * fraction * (fraction * (fraction * 6.0 - 15.0) + 10.0);
       return mix(mix(hashNoise(cell), hashNoise(cell + vec2(1.0, 0.0)), fraction.x),
         mix(hashNoise(cell + vec2(0.0, 1.0)), hashNoise(cell + vec2(1.0, 1.0)), fraction.x), fraction.y);
     }
@@ -26,22 +26,22 @@ export function createAtmosphere({ THREE, parent }) {
     }
     void main() {
       vec2 position = mistUv * vec2(5.8, 3.1);
-      position.x += clock * .027 + seed;
-      position.y += sin(position.x * .9 + clock * .07 + seed) * .22;
-      float turbulence = cloud(position + cloud(position * .73 + clock * .015));
+      position.x -= clock * .085 - seed;
+      position.y += sin(position.x * .9 + clock * .055 + seed) * .18;
+      float turbulence = cloud(position + cloud(position * .73 + clock * .023));
       float envelope = smoothstep(0.0, .18, mistUv.y) * (1.0 - smoothstep(.35, 1.0, mistUv.y));
       envelope *= smoothstep(0.0, .09, mistUv.x) * (1.0 - smoothstep(.91, 1.0, mistUv.x));
-      float wisp = smoothstep(.32, .76, turbulence);
+      float wisp = smoothstep(.29, .79, turbulence);
       vec3 tint = mix(warm, cold, smoothstep(.28, .76, mistUv.x));
       gl_FragColor = vec4(tint, envelope * wisp * density);
       #include <colorspace_fragment>
     }
   `;
   for (const [index, width, height, centerX, centerY, depth, density] of [
-    [0, 1710, 340, 768, 220, 18, .30],
-    [1, 1800, 330, 768, 87, 160, .25],
-    [2, 610, 310, 210, 175, 175, .21],
-    [3, 950, 920, 1230, 570, 80, .19],
+    [0, 1900, 400, 768, 220, 18, .22],
+    [1, 2000, 380, 768, 87, 160, .19],
+    [2, 740, 360, 210, 175, 175, .16],
+    [3, 950, 920, 1230, 570, 80, .12],
     [4, 530, 530, 430, 450, 85, .10]
   ]) {
     const geometry = new THREE.PlaneGeometry(width, height);

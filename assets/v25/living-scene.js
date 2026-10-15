@@ -1,13 +1,13 @@
 /** Rigid 2.5D props over the reference-locked architecture, rendered by Three.js. */
-import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES, PAVEMENT_PATCH} from './living-assets.js?v=living-street-5';
-import {createFoliage} from './foliage.js?v=living-street-5';
-import {createAtmosphere} from './atmosphere.js?v=living-street-5';
-import {createStreetCat} from './street-cat.js?v=living-street-5';
-import {createCurtains} from './curtains.js?v=living-street-5';
-import {createGutter} from './gutter.js?v=living-street-5';
-import {createWetStreet} from './wet-street.js?v=living-street-5';
-export async function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate,pavementPlate}) {
-  const H=1024,resources=[], prepared=prepareLivingAssets(image,cleanPlate,pavementPlate);
+import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES, PAVEMENT_PATCH} from './living-assets.js?v=living-street-6';
+import {createFoliage} from './foliage.js?v=living-street-6';
+import {createAtmosphere} from './atmosphere.js?v=living-street-6';
+import {createStreetCat} from './street-cat.js?v=living-street-6';
+import {createCurtains} from './curtains.js?v=living-street-6';
+import {createGutter} from './gutter.js?v=living-street-6';
+import {createWetStreet} from './wet-street.js?v=living-street-6';
+export async function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate,pavementPlate,foliageAtlas,foliagePlate}) {
+  const H=1024,resources=[], prepared=prepareLivingAssets(image,cleanPlate,pavementPlate,foliageAtlas,foliagePlate);
   const root=new THREE.Group();root.name='LivingProps';root.visible=false;scene.add(root);
   const tx=canvas=>{
     const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;

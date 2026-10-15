@@ -57,3 +57,11 @@ The portrait extension is replaced by `street-surround-portrait-v2.webp`: darker
 Nine plants sway more visibly with independently phased rooted wind; three curtain hems billow further while their suspension remains fixed. The two small wall lamps have their own light fluctuations. A weathered hollow spout, rim and collars replace the simple tube. `viewport-mist.js` adds slow continuous haze beyond the art's bounds, without introducing rainfall. Original/reduced-motion mode hides these additions.
 
 The cat keeps DreamNoms' licensed mesh and authored clips, with a generated black short-fur atlas, physical sheen, separate iris shading and a thinner/shorter tail. No claim is made that the underlying anatomy has become film quality or that a different photorealistic asset was found. See `scene-polish-prompts.md` for the new image-generation provenance.
+
+## Living Street 6 isolation repair
+
+The earlier polygon cutouts included wall pixels between leaves. Live plants now sample an RGBA leaf-only atlas, not the original facade crop. Transparent spaces remain empty; the stationary backdrop uses a separately generated, crisp foliage-removal plate only inside the plant regions. This replaces the broad moving polygons rather than hiding their error with weaker animation. Nine sprites retain individual anchored wind; their foliage is regenerated artwork, not exact original plant pixels or volumetric trees.
+
+Local mist transport increases from .027 to .085 shader units/second; viewport drift increases from .017 to .065. Quintic noise interpolation, gentler density and a common flow direction make the faster movement smoother. The right-side wall's wide blend was narrowed to at most six CSS pixels and its registration refined; no blur filter is used. Portrait framing retains a separate modest feather.
+
+The camera is now a centered orthographic frustum at the artwork center. Its visible framing is identical, but the mirror camera no longer projects the cat outside its render target. A back-of-scene shadow light projects the cat's silhouette onto visible paving instead of up the door. Browser pixel tests compare the wet surface with its reflection/shadow pass disabled.

@@ -8,7 +8,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1710, height: 896 } });
   const response = await page.goto(report.url, { timeout: 45000, waitUntil: 'domcontentloaded' });
   report.status = response.status();
-  await page.waitForFunction(() => window.__gatewayTest?.version === 'living-street-5' && window.__gatewayTest.snapshot().renderer === 'webgl', null, { timeout: 45000 });
+  await page.waitForFunction(() => window.__gatewayTest?.version === 'living-street-6' && window.__gatewayTest.snapshot().renderer === 'webgl', null, { timeout: 45000 });
   const snapshot = await page.evaluate(() => window.__gatewayTest.snapshot());
   report.version = await page.evaluate(() => window.__gatewayTest.version);
   report.renderer = snapshot.renderer;
