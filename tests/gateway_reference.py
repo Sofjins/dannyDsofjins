@@ -114,6 +114,24 @@ try:
         mae = float(delta.mean()); p99 = float(np.percentile(delta,99))
         check('reference_colour_match', mae < .8 and p99 <= 2, {'mean_error_0_255':mae,'p99_error':p99})
         report['webgl_verified'] = snap['renderer'] == 'webgl'
+        if snap['renderer'] == 'webgl':
+            page.evaluate('window.__gatewayTest.setMode("live")')
+            page.wait_for_timeout(250)
+            check('live_mode_enabled',page.evaluate('window.__gatewayTest.snapshot().mode')=='live')
+            live_a = np.asarray(Image.open(io.BytesIO(page.locator('.reference-art').screenshot())).convert('RGB')).astype('int16')
+            page.wait_for_timeout(300)
+            live_b = np.asarray(Image.open(io.BytesIO(page.locator('.reference-art').screenshot())).convert('RGB')).astype('int16')
+            temporal = np.abs(live_a-live_b)
+            check('live_light_changes_pixels',bool(temporal.max()>0))
+            check('no_blanket_glow',float(np.abs(live_a-actual).mean())<.15)
+            # Immutable architecture region: roofline and wood sign stay pixel-stable.
+            check('architecture_not_animated',int(temporal[90:200,220:600].max())==0)
+            page.locator('.gateway-door--magic').hover();page.wait_for_timeout(300)
+            lit = np.asarray(Image.open(io.BytesIO(page.locator('.reference-art').screenshot())).convert('RGB')).astype('int16')
+            check('door_hover_local_light',float((lit-actual)[485:705,330:555].mean())>0)
+            page.mouse.move(5,5);page.evaluate('window.__gatewayTest.setMode("reference")');page.wait_for_timeout(120)
+            reset = np.asarray(Image.open(io.BytesIO(page.locator('.reference-art').screenshot())).convert('RGB')).astype('int16')
+            check('reference_reset_exact',int(np.abs(reset-actual).max())==0)
         for width,height in [(1710,896),(1440,900),(1024,768),(844,390),(390,844),(360,640)]:
             page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(130)
             check(f'uncropped_{width}x{height}', (r:=bounded(page))['inside'] and not r['overflow'] and abs(r['aspect']-1.5)<.002, r)
