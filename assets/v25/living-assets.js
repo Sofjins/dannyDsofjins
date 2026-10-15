@@ -28,7 +28,9 @@ function maskFor(spec) {
   c.scale(4,4);c.translate(-x,-y);c.fillStyle='#fff';
   if(spec.path)c.fill(new Path2D(spec.path));
   else { c.beginPath();c.ellipse(x+w/2,y+h/2,w*.49,h*.49,0,0,Math.PI*2);c.fill(); }
-  const mask=makeCanvas(w,h);mask.getContext('2d').drawImage(high,0,0,w,h);
+  const mask=makeCanvas(w,h),context=mask.getContext('2d');
+  if(spec.feather)context.filter=`blur(${spec.feather}px)`;
+  context.drawImage(high,0,0,w,h);
   return mask;
 }
 

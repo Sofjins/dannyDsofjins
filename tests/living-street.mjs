@@ -110,13 +110,18 @@ try {
   }
   for (const [width, height] of [[1710, 896], [1440, 900], [1024, 768], [844, 390], [390, 844], [360, 640]]) {
     await page.setViewportSize({ width, height });
-    await page.waitForTimeout(140);
+    await page.waitForFunction(() => {
+      const artwork = document.querySelector('.reference-art').getBoundingClientRect();
+      const stage = document.querySelector('.reference-stage').getBoundingClientRect();
+      return artwork.left >= stage.left - 1 && artwork.right <= stage.right + 1 && artwork.top >= stage.top - 1 && artwork.bottom <= stage.bottom + 1;
+    });
     const layout = await page.evaluate(() => {
       const artwork = document.querySelector('.reference-art').getBoundingClientRect();
       const stage = document.querySelector('.reference-stage').getBoundingClientRect();
       return { contained: artwork.left >= stage.left - 1 && artwork.right <= stage.right + 1 && artwork.top >= stage.top - 1 && artwork.bottom <= stage.bottom + 1,
         viewport: Math.abs(stage.width - innerWidth) < 1 && Math.abs(stage.height - innerHeight) < 1,
-        overflow: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1 };
+        overflow: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1,
+        artwork: artwork.toJSON(), stage: stage.toJSON(), transform: getComputedStyle(document.querySelector('.reference-art')).transform };
     });
     verify(`full scene fits without cropping at ${width}x${height}`, layout.contained && layout.viewport && !layout.overflow, layout);
   }

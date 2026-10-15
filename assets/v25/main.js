@@ -208,7 +208,7 @@ function boot(root) {
     uniforms.uClock.value = clock;
     uniforms.uMagic.value = state.magic; uniforms.uSoftware.value = state.software;
     renderer.render(scene, camera);
-    if (live || Math.abs(state.magic - targetMagic) + Math.abs(state.software - targetSoftware) > .001) schedule();
+    if (live && testTime === null || Math.abs(state.magic - targetMagic) + Math.abs(state.software - targetSoftware) > .001) schedule();
   }
   function raycastAt(clientX, clientY) {
     if (!raycaster) return null;
