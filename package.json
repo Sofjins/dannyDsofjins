@@ -6,6 +6,8 @@
     "dev": "python -m http.server 4173 --bind 127.0.0.1",
     "test": "node --test tests/cat-motion.test.mjs",
     "test:browser": "node tests/living-street.mjs",
+    "build": "esbuild assets/v25/main.js --bundle --minify --format=esm --outfile=assets/v25/main.bundle.js --legal-comments=inline",
+    "optimize:cat": "node scripts/optimize-cat.mjs",
     "build:vendor": "esbuild assets/v25/three-entry.js --bundle --minify --format=esm --outfile=assets/v25/three-vendor.js --legal-comments=inline"
   },
   "devDependencies": {

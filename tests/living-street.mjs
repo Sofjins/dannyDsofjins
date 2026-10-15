@@ -31,6 +31,7 @@ try {
   page.on('console', message => { if (message.type() === 'error' && /THREE|Shader|WebGL/i.test(message.text())) report.errors.push(message.text()); });
   await page.goto('http://street.test/');
   await page.waitForFunction(() => window.__gatewayTest && window.__gatewayTest.snapshot().renderer !== 'loading');
+  await page.waitForFunction(()=>window.__gatewayTest.snapshot().motion?.cat.model==='authored-gltf');
   const initial = await page.evaluate(() => window.__gatewayTest.snapshot());
   verify('real WebGL renderer', initial.renderer === 'webgl', initial.reason);
   report.webgl = true;
@@ -41,7 +42,7 @@ try {
   verify('nine separate foliage groups', initial.motion.foliage.count === 9);
   verify('plants use leaf-only alpha sprites, not rectangular wall cutouts', initial.motion.foliage.isolatedAlpha && initial.motion.foliage.alphaOccupancy.every(([name, occupancy]) => occupancy > .03 && occupancy < .85), initial.motion.foliage.alphaOccupancy);
   verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored && initial.motion.curtains.isolatedAlpha);
-  verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.rainCount === 0);
+  verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.atmosphere.viewport && initial.motion.rainCount === 0);
   verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6 && initial.motion.gutter.emitters.length === 5);
   verify('cat has its own planar reflection and cast shadows', initial.motion.pavement.reflection === 'planar-skinned-mesh' && initial.motion.pavement.shadows === 'pcf-cast-and-contact');
   verify('short black coat and reduced tail', initial.motion.cat.coat === 'black-short-fur' && initial.motion.cat.tailScale[0] < .6);

@@ -24,21 +24,23 @@ export function createViewportMist({ THREE, stage }) {
       }
       void main() {
         vec2 pixel = (vec2(screenUv.x, 1.0-screenUv.y)*viewport-artOrigin)/artScale;
-        vec2 drift = pixel * vec2(.0035, .006) + vec2(-clock*.065, clock*.008);
-        float curl = cloud(drift*.6+vec2(clock*.014,0.0));
-        float vapor = smoothstep(.40,.76,cloud(drift+vec2(curl*1.4,curl*.5)));
-        float lowMist = exp(-pow((pixel.y-825.0)/220.0,2.0));
-        float outside = 1.0-smoothstep(-150.0,30.0,pixel.y);
-        outside = max(outside,smoothstep(1024.0,1280.0,pixel.y));
-        outside = max(outside,1.0-smoothstep(-80.0,120.0,pixel.x));
-        outside = max(outside,smoothstep(1410.0,1620.0,pixel.x));
-        float density = lowMist*.105 + outside*.07;
-        float facade = exp(-pow((pixel.y-550.0)/170.0,2.0))*.025;
-        density += facade*smoothstep(740.0,1100.0,pixel.x);
-        float roofClear = smoothstep(190.0,300.0,pixel.y);
-        density *= max(roofClear,outside);
-        vec3 tint = mix(vec3(.20,.17,.145),vec3(.12,.22,.31),smoothstep(200.0,1200.0,pixel.x));
-        gl_FragColor = vec4(tint,vapor*density);
+        vec2 drift=pixel*vec2(.0035,.006)+vec2(-clock*.065,clock*.008);
+        float curl=cloud(drift*.6+vec2(clock*.014,0.0));
+        float vapor=smoothstep(.31,.76,cloud(drift+vec2(curl*1.4,curl*.5)));
+        float foreground=smoothstep(.30,.78,cloud(drift*.72+vec2(-clock*.022,6.4)));
+        float facade=smoothstep(.38,.79,cloud(drift*.6+vec2(8.3,clock*.006)));
+        float lowMist=exp(-pow((pixel.y-815.0)/205.0,2.0));
+        float nearMist=exp(-pow((pixel.y-990.0)/270.0,2.0));
+        float sideMist=exp(-pow((pixel.y-570.0)/280.0,2.0));
+        float outside=1.0-smoothstep(-190.0,160.0,pixel.x);
+        outside=max(outside,smoothstep(1376.0,1726.0,pixel.x));
+        outside=max(outside,smoothstep(1024.0,1480.0,pixel.y));
+        outside=max(outside,1.0-smoothstep(-300.0,-20.0,pixel.y));
+        float alpha=vapor*lowMist*.23+foreground*nearMist*.16;
+        alpha+=facade*sideMist*.065+vapor*outside*.065;
+        alpha*=max(smoothstep(190.0,320.0,pixel.y),outside);
+        vec3 tint=mix(vec3(.20,.17,.145),vec3(.12,.22,.31),smoothstep(200.0,1200.0,pixel.x));
+        gl_FragColor=vec4(tint,alpha);
         #include <colorspace_fragment>
       }
     ` });
@@ -46,7 +48,8 @@ export function createViewportMist({ THREE, stage }) {
   let last = -1, enabled = false;
   return {
     layout(width, height, framing) {
-      renderer.setSize(Math.min(960, width), Math.min(960, width) * height / width, false);
+      const scale=Math.min(1,960/width,1120/height,Math.sqrt(650000/(width*height)));
+      renderer.setSize(Math.round(width*scale),Math.round(height*scale),false);
       uniforms.viewport.value.set(width, height);
       uniforms.artOrigin.value.set(framing.left-framing.artWidth/2, framing.top-framing.artHeight/2);
       uniforms.artScale.value = framing.scale; last = -1;

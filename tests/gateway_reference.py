@@ -64,9 +64,11 @@ def load(page, *, block_gl=False):
         page.add_script_tag(content=(ROOT/'assets/site.js').read_text())
         module=(ROOT/'assets/v25/main.js').read_text()
         framing=(ROOT/'assets/v25/framing.js').read_text().replace('export function','function')
-        module=module.replace("import { streetFraming } from './framing.js?v=living-street-7';",framing)
+        module=module.replace("import { streetFraming } from './framing.js?v=living-street-8';",framing)
         water=(ROOT/'assets/v25/water-light.js').read_text().replace('export const','const')
-        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-7';",water)
+        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-8';",water)
+        for name,statement in [('neon',"import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-8';"),('environment',"import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-8';"),('prepared-assets',"import { loadPreparedAssets } from './prepared-assets.js';")]:
+            module=module.replace(statement,(ROOT/f'assets/v25/{name}.js').read_text().replace('export ',''))
         page.add_script_tag(type='module', content=module)
     else:
         # Use exactly the production-pinned Three.js package, served locally for deterministic CI.
@@ -82,6 +84,7 @@ def load(page, *, block_gl=False):
         page.route('https://fonts.gstatic.com/**', lambda route: route.abort())
         page.goto(origin, wait_until='load')
     page.wait_for_function("window.__gatewayTest && ['image','webgl'].includes(window.__gatewayTest.snapshot().renderer)")
+    page.wait_for_function('window.__gatewayTest.snapshot().renderer==="image" || window.__gatewayTest.snapshot().motion?.cat.model==="authored-gltf"')
     page.wait_for_function('document.querySelector("#gateway-still").naturalWidth === 1536')
     page.wait_for_timeout(100)
 

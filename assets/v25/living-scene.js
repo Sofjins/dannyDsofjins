@@ -1,14 +1,14 @@
 /** Rigid 2.5D props over the reference-locked architecture, rendered by Three.js. */
-import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES, PAVEMENT_PATCH, FOLIAGE_REPAIRS, CLOTH_PATCH} from './living-assets.js?v=living-street-7';
-import {createFoliage} from './foliage.js?v=living-street-7';
-import {createAtmosphere} from './atmosphere.js?v=living-street-7';
-import {createStreetCat} from './street-cat.js?v=living-street-7';
-import {createCurtains} from './curtains.js?v=living-street-7';
-import {createGutter} from './gutter.js?v=living-street-7';
-import {createWetStreet} from './wet-street.js?v=living-street-7';
-import {neonLevels} from './neon.js?v=living-street-7';
-export async function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate,pavementPlate,foliageAtlas,foliagePlate,curtainAtlas,clothPlate}) {
-  const H=1024,resources=[], prepared=prepareLivingAssets(image,cleanPlate,pavementPlate,foliageAtlas,foliagePlate,curtainAtlas,clothPlate);
+import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES, PAVEMENT_PATCH, FOLIAGE_REPAIRS, CLOTH_PATCH} from './living-assets.js?v=living-street-8';
+import {createFoliage} from './foliage.js?v=living-street-8';
+import {createAtmosphere} from './atmosphere.js?v=living-street-8';
+import {createStreetCat} from './street-cat.js?v=living-street-8';
+import {createCurtains} from './curtains.js?v=living-street-8';
+import {createGutter} from './gutter.js?v=living-street-8';
+import {createWetStreet} from './wet-street.js?v=living-street-8';
+import {neonLevels} from './neon.js?v=living-street-8';
+export async function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate,pavementPlate,foliageAtlas,foliagePlate,curtainAtlas,clothPlate,preparedAssets}) {
+  const H=1024,resources=[], prepared=preparedAssets||prepareLivingAssets(image,cleanPlate,pavementPlate,foliageAtlas,foliagePlate,curtainAtlas,clothPlate);
   const root=new THREE.Group();root.name='LivingProps';root.visible=false;scene.add(root);
   const tx=canvas=>{
     const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;
@@ -56,7 +56,15 @@ export async function createLivingScene({THREE,scene,image,material,originalText
   const curtains=createCurtains({THREE,parent:root,prepared:prepared.curtains,texture:tx});
   const atmosphere=createAtmosphere({THREE,parent:root});
   const gutter=createGutter({THREE,parent:root});
-  const cat=prepared.catRemoved?await createStreetCat({THREE,parent:root}):null;
+  let cat=null,catPromise=null,catError=null,catSeed=null,disposed=false;
+  function loadCat(){
+    if(!prepared.catRemoved)return Promise.resolve();
+    if(!catPromise)catPromise=createStreetCat({THREE,parent:root}).then(actor=>{
+      if(disposed){actor.dispose();return;}
+      cat=actor;if(catSeed!==null)cat.setSeed(catSeed);cat.update(clock);
+    }).catch(error=>{catError=error.message;});
+    return catPromise;
+  }
   const pavement=createWetStreet({THREE,parent:root,texture:cleanTexture});
   const sky=new THREE.HemisphereLight(0x9eabc3,0x2f2421,1.3);
   const amber=new THREE.PointLight(0xffb476,240000,1400,2);
@@ -93,7 +101,7 @@ export async function createLivingScene({THREE,scene,image,material,originalText
     }
   }
   function react(id){const s=lanterns.find(s=>s.id===id);if(s)s.hoveredAt=clock;}
-  function snapshot(){return {enabled,clock,prepared:true,lanterns:lanterns.map(s=>({id:s.id,angle:s.pivot.rotation.z,pivot:[...s.pivot.position],rect:s.rect})),flames:flames.length,rainCount:0,foliage:foliage.snapshot(),curtains:curtains.snapshot(),gutter:gutter.snapshot(),atmosphere:atmosphere.snapshot(),pavement:pavement.snapshot(),cat:cat?.snapshot()||null};}
-  function dispose(){cat?.dispose();pavement.dispose();foliage.dispose();curtains.dispose();gutter.dispose();atmosphere.dispose();scene.remove(root);for(const r of resources)r.dispose();}
-  return {enable,update,react,snapshot,dispose,prepared,setPortrait:foliage.setPortrait,setCatVisible:value=>{if(cat)cat.root.visible=value;},greet:()=>cat?.greet(),catPose:()=>cat?.pose(),setCatSeed:seed=>cat?.setSeed(seed),setSurfaceVisible:value=>pavement.setVisible(value)};
+  function snapshot(){return {enabled,clock,prepared:true,lanterns:lanterns.map(s=>({id:s.id,angle:s.pivot.rotation.z,pivot:[...s.pivot.position],rect:s.rect})),flames:flames.length,rainCount:0,foliage:foliage.snapshot(),curtains:curtains.snapshot(),gutter:gutter.snapshot(),atmosphere:atmosphere.snapshot(),pavement:pavement.snapshot(),cat:cat?.snapshot()||{model:catError?'unavailable':'loading',error:catError}};}
+  function dispose(){disposed=true;cat?.dispose();pavement.dispose();foliage.dispose();curtains.dispose();gutter.dispose();atmosphere.dispose();scene.remove(root);for(const r of resources)r.dispose();}
+  return {enable,update,react,snapshot,dispose,prepared,loadCat,setPortrait:foliage.setPortrait,setViewportMist:atmosphere.setViewport,setCatVisible:value=>cat?.setVisible(value),greet:()=>cat?.greet(),catPose:()=>cat?.pose(),setCatSeed:seed=>{catSeed=seed;cat?.setSeed(seed);},setSurfaceVisible:value=>pavement.setVisible(value)};
 }

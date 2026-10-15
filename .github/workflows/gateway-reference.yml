@@ -11,6 +11,7 @@ on:
       - 'tests/living-street.mjs'
       - 'tests/cat-motion.test.mjs'
       - 'tests/deployed-street.mjs'
+      - 'tests/loading.mjs'
       - 'package*.json'
       - '.github/workflows/gateway-reference.yml'
   workflow_dispatch:
@@ -38,6 +39,7 @@ jobs:
         run: |
           node --check assets/v25/main.js
           npm test
+          node tests/loading.mjs
           GATEWAY_PREVIEW_LOG=1 npm run test:browser
           python tests/gateway_reference.py --require-webgl
           python tests/gateway_living.py

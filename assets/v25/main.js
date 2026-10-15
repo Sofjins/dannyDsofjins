@@ -2,17 +2,18 @@
  * Scene coordinates are the approved artwork's pixels (1536 x 1024).
  * This module enhances the existing static application; no server/build change required.
  */
-import { streetFraming } from './framing.js?v=living-street-7';
-import { waterLightShader } from './water-light.js?v=living-street-7';
-import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-7';
-import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-7';
+import { loadPreparedAssets } from './prepared-assets.js';
+import { streetFraming } from './framing.js?v=living-street-8';
+import { waterLightShader } from './water-light.js?v=living-street-8';
+import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-8';
+import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-8';
 
 const root = document.getElementById('gateway-experience');
 if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-7';
+  const VERSION = 'living-street-8';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -24,7 +25,9 @@ function boot(root) {
     magic: 0, software: 0, frame: 0, last: 0, entering: null, timer: 0,
     disposed: false, width: 0, height: 0, reason: null };
   let THREE, renderer, scene, camera, material, plane, raycaster, living, catTarget, viewportMist;
-  let elapsed = 0, testTime = null;
+  let elapsed=0,testTime=null,liveTexture=null,originalPromise=null,modeRequest=0,catTimer=0;
+  const baking=new URLSearchParams(location.search).has('bake');
+  const timing={started:performance.now(),firstLive:null,catReady:null};
   const environments = new Map();
   let environmentAxis = null;
   async function selectEnvironment(horizontal) {
@@ -137,12 +140,23 @@ function boot(root) {
     for (const b of views.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.view === state.view));
     layout();
   }
-  function setMode(mode) {
+  async function setMode(mode) {
+    const request=++modeRequest;
+    if(mode==='reference'&&state.renderer==='webgl'){
+      if(!originalPromise)originalPromise=new THREE.TextureLoader().loadAsync(new URL('./street-master.webp',import.meta.url).href).then(texture=>{
+        texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;
+        texture.minFilter=texture.magFilter=THREE.LinearFilter;resources.push(texture);return texture;
+      });
+      const original=await originalPromise;
+      if(state.disposed||request!==modeRequest)return;
+      material.map=original;still.src=original.image.src;
+    }else if(liveTexture&&material){material.map=liveTexture;if(!baking)still.src=new URL('./scene-preview-v8.webp',import.meta.url).href;}
     state.mode = mode === 'live' && renderer && state.renderer === 'webgl' && !reduced.matches ? 'live' : 'reference';
     root.dataset.mode = state.mode;
     for (const b of lighting.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
     uniforms.uLive.value = state.mode === 'live' ? 1 : 0;
     living?.enable(state.mode === 'live');
+    if(state.mode==='live'&&timing.firstLive)living.loadCat().then(()=>{timing.catReady=performance.now();schedule();});
     viewportMist?.enable(state.mode === 'live');
     if (catTarget && state.mode !== 'live') catTarget.hidden = true;
     state.last = 0;
@@ -267,8 +281,10 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('./three-vendor.js?v=living-street-7');
-      await Promise.all([still.decode(),selectEnvironment(stage.clientWidth/stage.clientHeight>=1.5)]);
+      const preparedTask=baking?null:loadPreparedAssets();
+      if(baking)still.src=new URL('./street-master.webp',import.meta.url).href;
+      THREE=await import('./three-vendor.js?v=living-street-8');
+      const [preparedAssets]=await Promise.all([preparedTask,selectEnvironment(stage.clientWidth/stage.clientHeight>=1.5),baking?still.decode():Promise.resolve()]);
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -280,7 +296,8 @@ function boot(root) {
       camera = new THREE.OrthographicCamera(-W / 2, W / 2, H / 2, -H / 2, .1, 2500);
       camera.position.set(W / 2, H / 2, 1200);
       camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
-      const texture = new THREE.Texture(still);
+      const texture = new THREE.Texture(preparedAssets?.clean||still);
+      liveTexture=texture;
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.generateMipmaps = false;
       texture.minFilter = texture.magFilter = THREE.LinearFilter;
@@ -337,24 +354,22 @@ function boot(root) {
       renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
-      const cleanPlate = new Image();
-      cleanPlate.src = new URL('./street-clean.webp?v=living-street-7', import.meta.url).href;
-      const pavementPlate = new Image();
-      pavementPlate.src = new URL('./street-pavement-clean.webp?v=living-street-7', import.meta.url).href;
-      const foliageAtlas = new Image(), foliagePlate = new Image();
-      foliageAtlas.src = new URL('./foliage-alpha.webp?v=living-street-7', import.meta.url).href;
-      foliagePlate.src = new URL('./foliage-background.webp?v=living-street-7', import.meta.url).href;
-      const curtainAtlas=new Image(),clothPlate=new Image();
-      curtainAtlas.src=new URL('./curtains-alpha.webp',import.meta.url).href;
-      clothPlate.src=new URL('./cloth-background.webp',import.meta.url).href;
-      await Promise.all([cleanPlate.decode(), pavementPlate.decode(), foliageAtlas.decode(), foliagePlate.decode(),curtainAtlas.decode(),clothPlate.decode()]);
-      if (state.disposed) return;
-      const { createLivingScene } = await import('./living-scene.js?v=living-street-7');
-      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate, pavementPlate, foliageAtlas, foliagePlate,curtainAtlas,clothPlate });
+      let sourceAssets={};
+      if(baking){
+        const names={cleanPlate:'street-clean.webp',pavementPlate:'street-pavement-clean.webp',foliageAtlas:'foliage-alpha.webp',
+          foliagePlate:'foliage-background.webp',curtainAtlas:'curtains-alpha.webp',clothPlate:'cloth-background.webp'};
+        await Promise.all(Object.entries(names).map(async([key,name])=>{
+          const image=new Image();image.src=new URL(name,import.meta.url).href;await image.decode();sourceAssets[key]=image;
+        }));
+      }
+      if(state.disposed)return;
+      const {createLivingScene}=await import('./living-scene.js?v=living-street-8');
+      living=await createLivingScene({THREE,scene,image:still,material,originalTexture:texture,preparedAssets,...sourceAssets});
       living.setPortrait(environmentAxis==='portrait');
       try {
-        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-7');
+        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-8');
         viewportMist = createViewportMist({ THREE, stage });
+        living.setViewportMist(true);
       } catch { viewportMist = null; }
       catTarget = el('button', 'living-cat-target');
       catTarget.type = 'button';
@@ -379,8 +394,10 @@ function boot(root) {
       state.renderer = 'webgl'; root.dataset.renderer = 'webgl';
       lighting.querySelector('[data-mode="live"]').disabled = reduced.matches;
       // Visitors get the living street automatically; explicit Still and reduced motion remain.
-      setMode(reduced.matches ? 'reference' : 'live');
+      await setMode(reduced.matches ? 'reference' : 'live');
       renderer.render(scene,camera);
+      timing.firstLive=performance.now();
+      if(!reduced.matches)catTimer=setTimeout(()=>living.loadCat().then(()=>{timing.catReady=performance.now();schedule();}),50);
       if (shaderFailure) throw new Error(`Living scene compilation failed: ${shaderFailure}`);
       schedule();
     } catch (error) {
@@ -388,7 +405,7 @@ function boot(root) {
     }
   }
   function dispose() {
-    state.disposed = true; clearTimeout(state.timer); cancelAnimationFrame(state.frame);
+    state.disposed = true; clearTimeout(state.timer);clearTimeout(catTimer); cancelAnimationFrame(state.frame);
     observer.disconnect(); listeners.forEach(off => off());
     living?.dispose();
     viewportMist?.dispose();
@@ -413,7 +430,7 @@ function boot(root) {
     greetCat: () => { living?.greet(); schedule(); },
     setCatSeed: seed => { living?.setCatSeed(seed); schedule(); },
     setSurfaceVisible: value => { living?.setSurfaceVisible(Boolean(value)); schedule(); },
-    snapshot: () => ({ renderer: state.renderer, reason: state.reason, mode: state.mode,
+    snapshot: () => ({ timing:{...timing}, renderer: state.renderer, reason: state.reason, mode: state.mode,
       motion: living?.snapshot() || null, view: state.view, camera: camera?.type || null,
       vertices: plane?.geometry.attributes.position.count || 0,
       maxDepth: plane ? Math.max(...Array.from(plane.geometry.attributes.position.array).filter((_,i)=>i%3===2)) : null,
@@ -421,5 +438,8 @@ function boot(root) {
       source: { width: still.naturalWidth, height: still.naturalHeight }, doors }),
     dispose,
   });
-  init();
+  let initialized=false;
+  const initializeWhenVisible=()=>{if(!initialized&&document.body.dataset.world==='gateway'){initialized=true;init();}};
+  on(window,'hashchange',()=>setTimeout(initializeWhenVisible,400));
+  initializeWhenVisible();
 }

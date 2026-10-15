@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { gunzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import { catPose, createCatBehavior, CAT_GROUND, CAT_BOX_TOP } from '../assets/v25/cat-motion.js';
 import { neonLevels } from '../assets/v25/neon.js';
@@ -192,4 +193,27 @@ test('floor texture registration exactly matches the surrounding CSS image',()=>
     }
   }
 });
+
+test('runtime cat optimization preserves every referenced geometry and animation byte',()=>{
+  const decode=filename=>{
+    const bytes=readFileSync(new URL('../assets/v25/models/'+filename,import.meta.url));
+    const length=bytes.readUInt32LE(12);
+    return {bytes,document:JSON.parse(bytes.subarray(20,20+length)),binary:bytes.subarray(28+length)};
+  };
+  const source=decode('somali-cat.glb'),runtime=decode('black-cat-runtime.glb');
+  assert.ok(runtime.bytes.length<source.bytes.length*.85);
+  const compressed=readFileSync(new URL('../assets/v25/models/black-cat-runtime.glb.gz',import.meta.url));
+  assert.ok(compressed.length<source.bytes.length*.16);
+  assert.deepEqual(gunzipSync(compressed),runtime.bytes);
+  assert.deepEqual(runtime.document.animations,source.document.animations);
+  assert.deepEqual(runtime.document.meshes,source.document.meshes);
+  assert.deepEqual(runtime.document.skins,source.document.skins);
+  for(const accessor of source.document.accessors){
+    if(accessor.bufferView===undefined)continue;
+    const original=source.document.bufferViews[accessor.bufferView],optimized=runtime.document.bufferViews[accessor.bufferView];
+    assert.deepEqual(runtime.binary.subarray(optimized.byteOffset||0,(optimized.byteOffset||0)+optimized.byteLength),
+      source.binary.subarray(original.byteOffset||0,(original.byteOffset||0)+original.byteLength));
+  }
+});
+
 

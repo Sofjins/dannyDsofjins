@@ -1,8 +1,20 @@
-import { createCatActor } from './cat-actor.js?v=living-street-7';
+import { createCatActor } from './cat-actor.js?v=living-street-8';
 
 export async function createStreetCat({ THREE, parent }) {
-  const model = await new THREE.GLTFLoader().loadAsync(new URL('./models/somali-cat.glb', import.meta.url).href);
-  const coat = await new THREE.TextureLoader().loadAsync(new URL('./models/black-shorthair-fur.webp', import.meta.url).href);
+  const loader=new THREE.GLTFLoader();
+  const loadModel=async()=>{
+    if(!('DecompressionStream' in globalThis))return loader.loadAsync(new URL('./models/black-cat-runtime.glb',import.meta.url).href);
+    const response=await fetch(new URL('./models/black-cat-runtime.glb.gz',import.meta.url));
+    if(!response.ok)throw new Error('Cat model unavailable');
+    const bytes=await response.arrayBuffer(),signature=new Uint8Array(bytes,0,2);
+    const buffer=signature[0]===31&&signature[1]===139
+      ?await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():bytes;
+    return loader.parseAsync(buffer,'');
+  };
+  const [model,coat]=await Promise.all([
+    loadModel(),
+    new THREE.TextureLoader().loadAsync(new URL('./models/black-shorthair-fur.webp',import.meta.url).href)
+  ]);
   coat.colorSpace = THREE.SRGBColorSpace; coat.flipY = false; coat.anisotropy = 8;
   const oldMaterials = new Set();
   model.scene.traverse(mesh => {
@@ -51,6 +63,7 @@ export async function createStreetCat({ THREE, parent }) {
   }
   update(0);
   return {
+    setVisible:value=>{actor.root.visible=value;shadow.visible=value;},
     update, root: actor.root, pose: actor.pose, greet: actor.greet, setSeed: actor.setSeed, snapshot: actor.snapshot,
     dispose() {
       actor.dispose(); parent.remove(actor.root, shadow);

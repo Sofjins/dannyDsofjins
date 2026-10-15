@@ -30,6 +30,7 @@ def load(page):
     page.route('https://fonts.gstatic.com/**',lambda r:r.abort())
     page.goto(origin,wait_until='load')
     page.wait_for_function('window.__gatewayTest && ["webgl","image"].includes(window.__gatewayTest.snapshot().renderer)')
+    page.wait_for_function('window.__gatewayTest.snapshot().motion?.cat.model==="authored-gltf"')
     snap=page.evaluate('window.__gatewayTest.snapshot()')
     check('real_webgl',snap['renderer']=='webgl',snap)
     return snap

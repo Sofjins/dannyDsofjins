@@ -56,8 +56,9 @@ export function createAtmosphere({ THREE, parent }) {
     parent.add(mesh); layers.push(mesh); resources.push(geometry, material);
   }
   return {
+    setViewport: value => layers.forEach(layer => {layer.visible=!value;}),
     update: seconds => layers.forEach(layer => { layer.material.uniforms.clock.value = seconds; }),
-    snapshot: () => ({ layers: layers.length, animated: true }),
+    snapshot: () => ({ layers: layers.length, animated: true, viewport:layers.every(layer=>!layer.visible) }),
     dispose: () => { layers.forEach(layer => parent.remove(layer)); resources.forEach(resource => resource.dispose()); }
   };
 }
