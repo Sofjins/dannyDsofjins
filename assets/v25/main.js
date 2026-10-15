@@ -240,7 +240,7 @@ function boot(root) {
         Object.assign(shader.uniforms, uniforms);
         shader.fragmentShader = `
           uniform float uClock, uLive, uMagic, uSoftware;
-          float patch(vec2 p, vec2 c, vec2 r) {
+          float lightMask(vec2 p, vec2 c, vec2 r) {
             return 1.0 - smoothstep(0.15, 1.0, length((p-c)/r));
           }
         ` + shader.fragmentShader;
@@ -250,21 +250,21 @@ function boot(root) {
           float warm = clamp((diffuseColor.r - diffuseColor.b) * 6.0, 0.0, 1.0);
           float cool = clamp(max(diffuseColor.b, diffuseColor.g) * 6.0 - diffuseColor.r, 0.0, 1.0);
           float flicker = 0.0;
-          flicker += patch(px,vec2(354.0,552.0),vec2(12.0,23.0)) * sin(uClock*7.1) * .032;
-          flicker += patch(px,vec2(475.0,563.0),vec2(15.0,29.0)) * sin(uClock*5.3+1.8) * .04;
-          flicker += patch(px,vec2(370.0,462.0),vec2(12.0,20.0)) * sin(uClock*6.6+3.2) * .03;
-          flicker += patch(px,vec2(582.0,457.0),vec2(13.0,23.0)) * sin(uClock*8.3+2.3) * .03;
-          flicker += patch(px,vec2(158.0,307.0),vec2(43.0,66.0)) * sin(uClock*1.5+1.0) * .012;
-          flicker += patch(px,vec2(670.0,301.0),vec2(41.0,66.0)) * sin(uClock*1.7+2.0) * .012;
-          float neon = patch(px,vec2(1100.0,238.0),vec2(94.0,29.0)) * sin(uClock*2.3) * .01;
+          flicker += lightMask(px,vec2(354.0,552.0),vec2(12.0,23.0)) * sin(uClock*7.1) * .032;
+          flicker += lightMask(px,vec2(475.0,563.0),vec2(15.0,29.0)) * sin(uClock*5.3+1.8) * .04;
+          flicker += lightMask(px,vec2(370.0,462.0),vec2(12.0,20.0)) * sin(uClock*6.6+3.2) * .03;
+          flicker += lightMask(px,vec2(582.0,457.0),vec2(13.0,23.0)) * sin(uClock*8.3+2.3) * .03;
+          flicker += lightMask(px,vec2(158.0,307.0),vec2(43.0,66.0)) * sin(uClock*1.5+1.0) * .012;
+          flicker += lightMask(px,vec2(670.0,301.0),vec2(41.0,66.0)) * sin(uClock*1.7+2.0) * .012;
+          float neon = lightMask(px,vec2(1100.0,238.0),vec2(94.0,29.0)) * sin(uClock*2.3) * .01;
           // Brief, independent, downward-only ageing in specific sign segments.
           float dipA = 1.0-smoothstep(.035,.095,abs(mod(uClock+1.5,13.7)-6.1));
           float dipB = 1.0-smoothstep(.025,.065,abs(mod(uClock+4.1,19.3)-8.2));
-          neon -= patch(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .12;
-          neon -= patch(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .09;
+          neon -= lightMask(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .12;
+          neon -= lightMask(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .09;
           float gain = uLive * (warm*flicker + cool*neon);
-          gain += uMagic * patch(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
-          gain += uSoftware * patch(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
+          gain += uMagic * lightMask(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
+          gain += uSoftware * lightMask(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
           diffuseColor.rgb *= exp2(gain);
         `);
       };
@@ -282,10 +282,12 @@ function boot(root) {
       }
       scene.updateMatrixWorld(true);
       let shaderFailure = false;
-      renderer.debug.onShaderError = () => { shaderFailure = true; };
+      renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
+        shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
+      };
       state.width = state.height = 0; layout();
       renderer.render(scene, camera);
-      if (shaderFailure) throw new Error('Gateway shader compilation failed');
+      if (shaderFailure) throw new Error(`Gateway shader compilation failed: ${shaderFailure}`);
       state.renderer = 'webgl'; root.dataset.renderer = 'webgl';
       lighting.querySelector('[data-mode="live"]').disabled = reduced.matches;
       schedule();
