@@ -1,8 +1,8 @@
 # Danny Sofjins — Living Street
 
-The landing is a reference-matched hybrid Three.js scene: the two-shop artwork provides the architecture, with independently animated lanterns, candle flames, foliage, a jointed 3D cat, and mist at three depths.
+Full-viewport hybrid Three.js landing: the approved two-shop artwork supplies rigid architecture, while separate lanterns, flames, foliage, curtains, a licensed animated 3D cat and layered mist bring the street to life.
 
-Both shop doors transition to the existing Magic and Software pages. The next scenes/interiors are a separate design phase.
+Both doors transition to the existing Magic and Software pages. Their future interiors are a separate design phase.
 
 ## Run and verify
 
@@ -14,19 +14,20 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-Open http://localhost:4173. Production is still static HTML/CSS/JS and images; Coolify can serve the repository root without a Node process or a build command. Three.js 0.184.0 is bundled locally, so the scene does not depend on a CDN. Rebuild that checked-in bundle with `npm run build:vendor` after dependency changes.
+Open http://localhost:4173. Production is static HTML/CSS/JS and local assets; Coolify serves the repository root without a Node process or build step. Three.js 0.184.0 is bundled locally. Rebuild it with `npm run build:vendor` after dependency changes.
 
 ## Scene behavior
 
-- The cat drinks, walks to the crate beside the bicycle, crouches, jumps, lands, perches, and returns. Its leg joints use inverse kinematics, with a segmented tail, warm/cool lighting and a contact shadow. Clicking it produces a brief greeting without interrupting its path.
-- The original painted cat is removed in live mode using a small feathered patch from the generated clean plate. Original mode restores the untouched reference, including its original cat.
-- Five plant groups have separate textured meshes with fixed roots. Only their meshes bend; the building and street never deform.
-- Lanterns and candle flames retain the existing registered cutouts. Neon dips are localized and reflected on the wet pavement; mist drifts in three layers.
-- Both doors remain accessible links. Entry adds a short push-in/fade; reduced motion skips it. Mobile offers the whole street and explicit close views.
-- Animation pauses outside the gateway and when the tab is hidden. Reduced motion and WebGL failure retain the original artwork and working navigation.
+- DreamNoms' free CC BY 4.0 Somali Cat uses its authored walk, idle, sit-down, sitting and stand-up clips. Custom rig adjustments handle drinking, crouching, jumping and front-first landing; these are not motion-captured jump clips.
+- Each visit gets a randomized schedule: long rests, left/right walks, drinking and occasional crate visits. Motion is seeded for reproducible tests, not a short repeating loop. Clicking the cat gives a brief greeting without changing its path.
+- Nine foliage meshes and three burgundy curtain panels have individually anchored motion. Architecture never bends. These are textured cutouts, not fully volumetric plant models.
+- Lanterns sway independently, candle flames and local illumination vary, and separate neon signs have different rhythms. Coffee now sits at the window's bottom-left with OPEN 24/7; a slim Japanese development sign sits on the right.
+- Five mist layers add depth without rain. The gutter releases three drops every 7.4 seconds, with small bowl ripples after impact.
+- The scene covers the viewport without a frame. Wide and portrait screens crop the art rather than stretching it; mobile focus controls and persistent destination links keep both entrances accessible.
+- Original mode restores the untouched reference. Reduced motion and WebGL failure retain the still artwork and working navigation. Animation pauses when the tab or gateway is hidden.
 
-The cat is a first-pass procedural model, not a licensed or sculpted film-quality asset. Visual review should decide whether its silhouette/materials need a bespoke rig. See [the implementation plan](docs/living-street-plan.md).
+## Assets and checks
 
-## Checks
+Cat attribution and source details: [model credits](assets/v25/models/CREDITS.md). Artwork edits and design limits: [implementation notes](docs/living-street-plan.md).
 
-GitHub Actions runs motion/contact tests, actual WebGL browser checks, the existing reference checks, and a browser recording. Screenshots and reports are retained as `gateway-reference-proof`. A passing motion test alone does not establish visual quality; inspect the screenshots and video.
+GitHub Actions runs motion/contact tests, real WebGL checks, reference-color checks and a browser recording. Reports and screenshots are retained as `gateway-reference-proof`. Automated tests verify behavior, not cinematic quality; inspect the actual screenshots and motion as well.

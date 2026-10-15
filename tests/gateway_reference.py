@@ -85,7 +85,7 @@ def bounded(page):
     return page.evaluate('''() => {
       const a=document.querySelector('.reference-art').getBoundingClientRect();
       const b=document.querySelector('.reference-stage').getBoundingClientRect();
-      return {inside:a.left>=b.left-.6 && a.right<=b.right+.6 && a.top>=b.top-.6 && a.bottom<=b.bottom+.6,
+      return {inside:a.left<=b.left+.6 && a.right>=b.right-.6 && a.top<=b.top+.6 && a.bottom>=b.bottom-.6 && Math.abs(b.width-innerWidth)<1 && Math.abs(b.height-innerHeight)<1,
       aspect:a.width/a.height, overflow:document.documentElement.scrollWidth>innerWidth+1,
       size:[a.width,a.height]}; }''')
 
@@ -94,7 +94,7 @@ try:
         exe = os.environ.get('BROWSER_PATH')
         browser = p.chromium.launch(executable_path=exe, headless=True, args=[
             '--no-sandbox', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'])
-        page = browser.new_page(viewport={'width': 1660, 'height': 1200}, device_scale_factor=1)
+        page = browser.new_page(viewport={'width': 1536, 'height': 1024}, device_scale_factor=1)
         load(page)
         snap = page.evaluate('window.__gatewayTest.snapshot()')
         report['renderer'] = snap
@@ -103,6 +103,7 @@ try:
         if snap['renderer'] == 'webgl':
             check('orthographic_camera', snap['camera'] == 'OrthographicCamera')
             check('rigid_quad_no_displacement', snap['vertices'] == 4 and snap['maxDepth'] == 0, snap)
+        overlay = page.add_style_tag(content='.site-header,.reference-controls,.reference-views{visibility:hidden!important}')
         page.mouse.move(5, 5)
         page.evaluate('window.__gatewayTest.setMode("reference")')
         page.wait_for_timeout(150)
@@ -133,9 +134,10 @@ try:
             page.mouse.move(5,5);page.evaluate('window.__gatewayTest.setMode("reference")');page.wait_for_timeout(120)
             reset = np.asarray(Image.open(io.BytesIO(page.locator('.reference-art').screenshot())).convert('RGB')).astype('int16')
             check('reference_reset_exact',int(np.abs(reset-actual).max())==0)
+        overlay.evaluate('(element)=>element.remove()')
         for width,height in [(1710,896),(1440,900),(1024,768),(844,390),(390,844),(360,640)]:
             page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(130)
-            check(f'uncropped_{width}x{height}', (r:=bounded(page))['inside'] and not r['overflow'] and abs(r['aspect']-1.5)<.002, r)
+            check(f'fullscreen_{width}x{height}', (r:=bounded(page))['inside'] and not r['overflow'] and abs(r['aspect']-1.5)<.002, r)
         page.set_viewport_size({'width':1710,'height':1000});page.wait_for_timeout(100)
         page.screenshot(path=str(OUT/'desktop.png'))
         for door in ['magic','software']:
@@ -150,7 +152,7 @@ try:
             page.wait_for_function('(id)=>document.body.dataset.world===id',arg=door)
             check(f'door_route_{door}',page.evaluate('document.body.dataset.world')==door)
             page.locator('.brand').click()
-            page.wait_for_function('document.body.dataset.world === "gateway"');page.wait_for_timeout(450)
+            page.wait_for_function('document.body.dataset.world === "gateway"');page.wait_for_timeout(900)
         page.set_viewport_size({'width':390,'height':844});page.wait_for_timeout(100)
         page.mouse.move(0,0)
         page.screenshot(path=str(OUT/'mobile-full.png'),full_page=True)
@@ -163,7 +165,7 @@ try:
         page.wait_for_function('document.body.dataset.world === "software"')
         check('mobile_destination',True)
         page.locator('.brand').click();page.wait_for_function('document.body.dataset.world === "gateway"')
-        page.wait_for_timeout(450)
+        page.wait_for_timeout(900)
         page.emulate_media(reduced_motion='reduce')
         check('reduced_motion_reference',page.evaluate('window.__gatewayTest.snapshot().mode')=='reference')
         fallback_page=browser.new_page(viewport={'width':1440,'height':900})

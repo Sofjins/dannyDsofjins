@@ -1,73 +1,114 @@
-export const CAT_CYCLE = 36;
 export const CAT_GROUND = 778;
 export const CAT_BOX_TOP = 707;
+export const CAT_BOWL_X = 745;
+export const CAT_CRATE_X = 1268;
 
 const clamp = value => Math.max(0, Math.min(1, value));
 const ease = value => { const progress = clamp(value); return progress * progress * (3 - 2 * progress); };
 const mix = (start, end, progress) => start + (end - start) * progress;
 
-export function solveLeg(targetX, targetY, bend = 1) {
-  const upperLength = 23, lowerLength = 17;
-  const distance = Math.min(39.99, Math.max(6.01, Math.hypot(targetX, targetY)));
-  const direction = Math.atan2(targetX, -targetY);
-  const shoulder = Math.acos(Math.max(-1, Math.min(1,
-    (distance * distance + upperLength * upperLength - lowerLength * lowerLength) / (2 * distance * upperLength))));
-  const knee = Math.PI - Math.acos(Math.max(-1, Math.min(1,
-    (upperLength * upperLength + lowerLength * lowerLength - distance * distance) / (2 * upperLength * lowerLength))));
-  return { upper: direction - bend * shoulder, lower: bend * knee };
+export function createCatBehavior(seed = 97402971) {
+  let randomState = seed >>> 0, clock = 0, position = CAT_BOWL_X, surface = CAT_GROUND, direction = 1, sitting = true;
+  const events = [];
+  const random = () => { randomState = Math.imul(randomState, 1664525) + 1013904223 >>> 0; return randomState / 4294967296; };
+  const range = (minimum, maximum) => mix(minimum, maximum, random());
+  function add(mode, duration, extra = {}) {
+    const event = { mode, start: clock, duration, fromX: position, toX: position,
+      fromY: surface, toY: surface, facing: direction, nextFacing: direction, rate: range(.83, 1.07), ...extra };
+    events.push(event); clock += duration;
+    position = event.toX; surface = event.toY; direction = event.nextFacing;
+  }
+  function stand() { if (sitting) { add('stand', 1.5); sitting = false; } }
+  function turn(next) { if (direction !== next) add('turn', range(1.2, 1.8), { nextFacing: next }); }
+  function walk(target) {
+    stand(); turn(target > position ? 1 : -1);
+    if (Math.abs(target - position) > 5) add('walk', Math.abs(target - position) / range(34, 43), { toX: target });
+  }
+  function rest(duration) { add('sit-down', 1.5); sitting = true; add(surface === CAT_BOX_TOP ? 'perch' : 'sit', duration); }
+  function visit(destination) {
+    if (destination === 'crate') {
+      walk(1167); add('look', range(1.8, 4.2));
+      add('crouch', .65); add('jump', .72, { toX: CAT_CRATE_X, toY: CAT_BOX_TOP });
+      add('land', .55); rest(range(22, 46));
+    } else if (destination === 'bowl') {
+      walk(CAT_BOWL_X); turn(1); add('drink', range(9, 19)); rest(range(10, 25));
+    } else {
+      walk(destination === 'left' ? range(340, 555) : range(890, 1110));
+      add('look', range(2.5, 7)); rest(range(14, 39));
+    }
+  }
+  add('sit', range(10, 22));
+  stand(); add('drink', range(8, 15));
+  visit('left');
+  visit('crate');
+  function extend(seconds) {
+    while (clock < seconds + 120) {
+      if (surface === CAT_BOX_TOP) {
+        stand(); turn(-1); add('crouch', .5);
+        add('jump-down', .66, { toX: 1154, toY: CAT_GROUND });
+        add('land', .55);
+      }
+      const choice = random();
+      visit(choice < .28 ? 'bowl' : choice < .54 ? 'left' : choice < .78 ? 'right' : 'crate');
+    }
+  }
+  function poseAt(seconds, greetingAt = -100) {
+    const time = Math.max(0, seconds); extend(time);
+    const event = events.find(event => time >= event.start && time < event.start + event.duration);
+    const progress = clamp((time - event.start) / event.duration);
+    const local = time - event.start;
+    const pose = { mode: event.mode, x: event.fromX, screenY: event.fromY, surfaceY: event.fromY,
+      facing: event.facing, clip: 'Idle', clipTime: local * event.rate % 2,
+      blend: 1, previousClip: null, previousTime: 0, progress, greeting: 0,
+      jump: 0, crouch: 0, pitch: 0, drink: 0, frontContact: false, rearContact: false };
+    if (event.mode === 'sit' || event.mode === 'perch') pose.clip = 'SittingIdle';
+    if (event.mode === 'stand' || event.mode === 'sit-down') {
+      pose.clip = event.mode === 'stand' ? 'StandUp' : 'SitDown'; pose.clipTime = local;
+    }
+    if (event.mode === 'turn') {
+      pose.facing = mix(event.facing, event.nextFacing, ease(progress));
+      pose.clip = 'WalkClean'; pose.clipTime = local * .45 % (4 / 3);
+    }
+    if (event.mode === 'walk') {
+      const ramp = Math.min(.08, .35 / event.duration);
+      const travelled = progress < ramp ? progress * progress / (2 * ramp) :
+        progress > 1 - ramp ? 1 - ramp - (1 - progress) ** 2 / (2 * ramp) : progress - ramp / 2;
+      const fraction = travelled / (1 - ramp);
+      pose.x = mix(event.fromX, event.toX, fraction);
+      pose.clip = 'WalkClean'; pose.clipTime = Math.abs(pose.x - event.fromX) / 45 * (4 / 3) % (4 / 3);
+      pose.blend = Math.min(ease(local / .25), ease((event.duration - local) / .25));
+      pose.previousClip = 'Idle';
+    }
+    if (event.mode === 'drink') {
+      pose.drink = ease(local / 1.4) * ease((event.duration - local) / 1.5);
+    }
+    if (event.mode === 'crouch') {
+      pose.clip = 'SitDown'; pose.clipTime = .65 * ease(progress); pose.crouch = ease(progress);
+    }
+    if (event.mode === 'jump' || event.mode === 'jump-down') {
+      const rise = event.fromY - event.toY;
+      const arc = event.mode === 'jump' ? 42 : 43;
+      pose.x = mix(event.fromX, event.toX, progress);
+      pose.screenY = event.fromY - rise * progress - arc * 4 * progress * (1 - progress);
+      pose.surfaceY = pose.x >= 1228 ? CAT_BOX_TOP : CAT_GROUND;
+      pose.clipTime = 0; pose.jump = Math.sin(progress * Math.PI);
+      pose.pitch = event.mode === 'jump' ? .27 * Math.sin(progress * Math.PI * 2) : -.12 * Math.sin(progress * Math.PI);
+      pose.blend = ease(local / .15); pose.previousClip = 'SitDown'; pose.previousTime = .65;
+      pose.frontContact = progress > .94;
+    }
+    if (event.mode === 'land') {
+      pose.clip = 'SitDown'; pose.clipTime = .48 * Math.sin(progress * Math.PI);
+      pose.frontContact = true; pose.rearContact = progress > .28;
+      pose.crouch = Math.sin(progress * Math.PI);
+      pose.pitch = -.10 * Math.sin(progress * Math.PI);
+    }
+    const greetingTime = time - greetingAt;
+    if (greetingTime >= 0 && greetingTime < 2.4 && !event.mode.includes('jump')) pose.greeting = Math.sin(greetingTime / 2.4 * Math.PI);
+    return pose;
+  }
+  extend(0);
+  return { poseAt, plan: () => events.map(event => ({ ...event })), seed };
 }
 
-export function catPose(seconds, greetingAt = -100) {
-  const time = ((seconds % CAT_CYCLE) + CAT_CYCLE) % CAT_CYCLE;
-  const pose = { mode: 'drink', x: 724, ground: CAT_GROUND, height: 0,
-    facing: 1, walk: 0, gait: 0, crouch: 0, pitch: 0, sit: 0, head: -.25, greeting: 0 };
-  if (time < 3) {
-    pose.head = -.26 + Math.sin(time * 8) * .045;
-  } else if (time < 12) {
-    const progress = (time - 3) / 9;
-    pose.mode = 'walk'; pose.x = mix(724, 1164, progress);
-    pose.walk = Math.min(1, progress * 14, (1 - progress) * 14);
-    pose.gait = (pose.x - 724) / 54 * Math.PI * 2; pose.head = -.035;
-  } else if (time < 12.7) {
-    pose.mode = 'crouch'; pose.x = 1164; pose.crouch = ease((time - 12) / .7);
-    pose.head = .14;
-  } else if (time < 13.6) {
-    const progress = (time - 12.7) / .9;
-    pose.mode = 'jump'; pose.x = mix(1164, 1268, progress);
-    pose.height = mix(0, CAT_GROUND - CAT_BOX_TOP, progress) + 51 * 4 * progress * (1 - progress);
-    pose.pitch = .23 * Math.cos(progress * Math.PI);
-    pose.crouch = .38 * Math.sin(progress * Math.PI); pose.head = .1;
-  } else if (time < 14.25) {
-    const progress = (time - 13.6) / .65;
-    pose.mode = 'land'; pose.x = 1268; pose.height = CAT_GROUND - CAT_BOX_TOP;
-    pose.crouch = Math.sin(progress * Math.PI) * .62; pose.head = .05;
-  } else if (time < 21) {
-    pose.mode = 'perch'; pose.x = 1268; pose.height = CAT_GROUND - CAT_BOX_TOP;
-    pose.sit = ease((time - 14.25) / .8) * (1 - ease((time - 20.2) / .8));
-    pose.facing = 1 - ease((time - 19.2) / .9) * 2;
-    pose.head = .07 + Math.sin(time * .75) * .07;
-  } else if (time < 21.8) {
-    const progress = (time - 21) / .8;
-    pose.mode = 'jump-down'; pose.x = mix(1268, 1154, progress); pose.facing = -1;
-    pose.height = (CAT_GROUND - CAT_BOX_TOP) * (1 - progress) + 19 * Math.sin(progress * Math.PI);
-    pose.pitch = -.17; pose.crouch = .25 * Math.sin(progress * Math.PI);
-  } else if (time < 22.4) {
-    pose.mode = 'land'; pose.x = 1154; pose.facing = -1;
-    pose.crouch = .5 * Math.sin((time - 21.8) / .6 * Math.PI); pose.head = -.07;
-  } else if (time < 31.4) {
-    const progress = (time - 22.4) / 9;
-    pose.mode = 'walk'; pose.x = mix(1154, 724, progress); pose.facing = -1;
-    pose.walk = Math.min(1, progress * 14, (1 - progress) * 14);
-    pose.gait = (1154 - pose.x) / 54 * Math.PI * 2; pose.head = -.035;
-  } else {
-    pose.mode = 'look'; pose.facing = -1 + 2 * ease((time - 32) / 1.3);
-    pose.head = mix(.03, -.25, ease((time - 34) / 2));
-  }
-  const greetingTime = seconds - greetingAt;
-  if (greetingTime >= 0 && greetingTime < 2.4 && !pose.mode.includes('jump')) {
-    pose.greeting = Math.sin(greetingTime / 2.4 * Math.PI);
-    pose.head += pose.greeting * .12;
-  }
-  pose.screenY = pose.ground - pose.height;
-  return pose;
-}
+const defaultBehavior = createCatBehavior();
+export const catPose = (seconds, greetingAt) => defaultBehavior.poseAt(seconds, greetingAt);

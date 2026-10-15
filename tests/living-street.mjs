@@ -17,7 +17,7 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 let browser;
 try {
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-unsafe-swiftshader', '--use-angle=swiftshader'] });
-  const context = await browser.newContext({ viewport: { width: 1660, height: 1200 }, deviceScaleFactor: 1 });
+  const context = await browser.newContext({ viewport: { width: 1536, height: 1024 }, deviceScaleFactor: 1 });
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
     if (url.hostname !== 'street.test') return route.abort();
@@ -34,11 +34,14 @@ try {
   const initial = await page.evaluate(() => window.__gatewayTest.snapshot());
   verify('real WebGL renderer', initial.renderer === 'webgl', initial.reason);
   report.webgl = true;
+  await page.evaluate(() => window.__gatewayTest.setCatSeed(97402971));
   verify('live scene starts automatically', initial.mode === 'live');
   verify('architecture remains a rigid plane', initial.vertices === 4 && initial.maxDepth === 0);
-  verify('cat has articulated 3D joints', initial.motion.cat.model === 'articulated-3d' && initial.motion.cat.joints >= 18);
-  verify('five separate foliage groups', initial.motion.foliage.count === 5);
-  verify('mist has three depth layers', initial.motion.atmosphere.layers === 3);
+  verify('cat uses the authored rig and animation clips', initial.motion.cat.model === 'authored-gltf' && initial.motion.cat.joints >= 30 && initial.motion.cat.clips.includes('WalkClean'));
+  verify('nine separate foliage groups', initial.motion.foliage.count === 9);
+  verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored);
+  verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.rainCount === 0);
+  verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6);
   const art = page.locator('.reference-art');
   const frame = async seconds => {
     await page.evaluate(time => window.__gatewayTest.seek(time), seconds);
@@ -63,16 +66,22 @@ try {
   verify('lantern pixels move', difference(early, later, [116, 214, 100, 176]).maximum > 5);
   verify('foliage pixels move', difference(early, later, [554, 448, 160, 150]).maximum > 3);
   verify('mist pixels evolve', difference(early, later, [250, 800, 300, 150]).maximum > 0);
-  for (const [seconds, name, mode] of [[8, 'walk', 'walk'], [13.2, 'jump', 'jump'], [16, 'perch', 'perch'], [27, 'return', 'walk']]) {
-    await frame(seconds);
+  verify('curtain pixels move', difference(early, later, [290, 315, 310, 145]).maximum > 4);
+  const neonOn = await frame(2);
+  const neonOff = await frame(2.4);
+  verify('coffee sign visibly flickers in its new left-hand position', difference(neonOn, neonOff, [1134, 575, 63, 73]).mean > 2);
+  const plan = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat.plan);
+  for (const mode of ['drink', 'walk', 'sit-down', 'sit', 'jump', 'land', 'perch', 'jump-down']) {
+    const event = plan.find(event => event.mode === mode);
+    await frame(event.start + event.duration * .5);
     const cat = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat);
-    verify(`cat ${name}`, cat.mode === mode, cat);
-    if (name === 'perch') verify('paws land on crate top', cat.screenY === 707);
-    await art.screenshot({ path: resolve(output, `street-${name}.png`) });
+    verify(`cat ${mode}`, cat.mode === mode, { mode: cat.mode, x: cat.x, screenY: cat.screenY });
+    verify('cat stays above the street', cat.screenY <= 778);
+    await art.screenshot({ path: resolve(output, `street-${mode}.png`) });
   }
-  await frame(16);
+  await frame(45);
   await page.evaluate(() => window.__gatewayTest.greetCat());
-  await frame(17);
+  await frame(46);
   verify('cat responds without teleportation', await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat.greeting > 0));
   await page.evaluate(() => window.__gatewayTest.setMode('reference'));
   await page.waitForTimeout(120);
@@ -103,10 +112,11 @@ try {
     const layout = await page.evaluate(() => {
       const artwork = document.querySelector('.reference-art').getBoundingClientRect();
       const stage = document.querySelector('.reference-stage').getBoundingClientRect();
-      return { inside: artwork.left >= stage.left - 1 && artwork.right <= stage.right + 1 && artwork.top >= stage.top - 1 && artwork.bottom <= stage.bottom + 1,
-        overflow: document.documentElement.scrollWidth > innerWidth + 1 };
+      return { covered: artwork.left <= stage.left + 1 && artwork.right >= stage.right - 1 && artwork.top <= stage.top + 1 && artwork.bottom >= stage.bottom - 1,
+        viewport: Math.abs(stage.width - innerWidth) < 1 && Math.abs(stage.height - innerHeight) < 1,
+        overflow: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1 };
     });
-    verify(`full scene fits ${width}x${height}`, layout.inside && !layout.overflow, layout);
+    verify(`scene fills viewport ${width}x${height}`, layout.covered && layout.viewport && !layout.overflow, layout);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('[data-view="software"]').click();
@@ -130,12 +140,19 @@ try {
   verify('doors work without WebGL', true);
   verify('no unhandled runtime or shader errors', report.errors.length === 0, report.errors);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.setViewportSize({ width: 1660, height: 1200 });
+  await page.setViewportSize({ width: 1536, height: 1024 });
   await page.evaluate(() => { window.__gatewayTest.setView('full'); window.__gatewayTest.setMode('live'); });
-  await frame(8);
+  await frame(90);
   if (process.env.GATEWAY_PREVIEW_LOG === '1') {
     const preview = await art.screenshot({ type: 'jpeg', quality: 65 });
     console.log(`STREET_PREVIEW_BASE64=${preview.toString('base64')}`);
+    for (const mode of ['drink', 'jump', 'land', 'perch']) {
+      const event = plan.find(event => event.mode === mode);
+      await frame(event.start + event.duration * .5);
+      const cat = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat);
+      const preview = await page.screenshot({ type: 'jpeg', quality: 90, clip: { x: cat.x - 100, y: cat.screenY - 160, width: 200, height: 200 } });
+      console.log(`CAT_${mode.toUpperCase()}_BASE64=${preview.toString('base64')}`);
+    }
   }
   await context.close();
 } finally {

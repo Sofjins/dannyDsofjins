@@ -1,16 +1,16 @@
-/** Hand-registered source cutouts. Pixels come only from the approved 1536x1024 artwork.
- * No new street artwork or external model is generated. Coordinates are source pixels.
- * The hidden background is reconstructed locally, and exposed by no more than 5px.
- */
-import { FOLIAGE } from './foliage.js';
+import { FOLIAGE } from './foliage.js?v=living-street-3';
+import { CURTAINS } from './curtains.js?v=living-street-3';
+
+export const CLEAN_PATCHES = [[628, 678, 188, 114], [1090, 188, 145, 95], [1231, 112, 243, 205],
+  [1106, 548, 216, 151], [1330, 312, 54, 223]];
 
 export const LANTERNS = [
   { id:'left', rect:[116,214,100,176], pivot:[164,224],
     path:'M162 224 L166 224 L166 233 L171 235 L171 244 L179 246 L180 252 C197 258 202 270 203 291 L203 331 C202 350 196 359 185 365 L179 367 L179 376 L166 378 L166 385 L162 385 L162 378 L146 378 L145 367 C131 360 125 345 125 329 L124 290 C124 269 131 260 146 254 L146 246 L157 244 L157 235 L162 232 Z',
-    period:21.5, offset:0, amplitude:.023 },
+    period:14.5, offset:0, amplitude:.040 },
   { id:'right', rect:[618,205,104,196], pivot:[669,214],
     path:'M667 214 L671 214 L671 222 L675 225 L677 233 L689 233 L690 244 C708 251 711 267 711 284 L711 326 C711 345 706 357 691 360 L686 362 L686 372 L673 374 L673 390 L669 395 L666 392 L668 374 L653 373 L652 362 C638 357 632 345 632 328 L632 280 C632 260 640 250 653 243 L653 234 L663 232 L664 225 L667 222 Z',
-    period:25.7, offset:2.2, amplitude:.020 }
+    period:17.7, offset:2.2, amplitude:.035 }
 ];
 // Only the flame above each wick is separated, not the candle or surrounding furniture.
 export const FLAMES = [
@@ -64,17 +64,17 @@ function restoreBehind(source, mask) {
 
 export function prepareLivingAssets(image, cleanPlate) {
   const clean=makeCanvas(1536,1024),cc=clean.getContext('2d');cc.drawImage(image,0,0);
-  if (cleanPlate) {
-    const patch = makeCanvas(188, 114);
+  if (cleanPlate) for (const [left, top, width, height] of CLEAN_PATCHES) {
+    const patch = makeCanvas(width, height);
     const context = patch.getContext('2d');
-    context.drawImage(cleanPlate, 628, 678, 188, 114, 0, 0, 188, 114);
-    const pixels = context.getImageData(0, 0, 188, 114);
-    for (let row = 0; row < 114; row++) for (let column = 0; column < 188; column++) {
-      const edge = Math.min(column, row, 187 - column, 113 - row);
-      pixels.data[(row * 188 + column) * 4 + 3] = Math.min(255, edge / 6 * 255);
+    context.drawImage(cleanPlate, left, top, width, height, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height);
+    for (let row = 0; row < height; row++) for (let column = 0; column < width; column++) {
+      const edge = Math.min(column, row, width - 1 - column, height - 1 - row);
+      pixels.data[(row * width + column) * 4 + 3] = Math.min(255, edge / 6 * 255);
     }
     context.putImageData(pixels, 0, 0);
-    cc.drawImage(patch, 628, 678);
+    cc.drawImage(patch, left, top);
   }
   const cut = (spec) => {
     const [x,y,w,h]=spec.rect,source=makeCanvas(w,h),sc=source.getContext('2d');
@@ -85,16 +85,17 @@ export function prepareLivingAssets(image, cleanPlate) {
     tc.globalCompositeOperation='destination-in';tc.drawImage(mask,0,0);
     return {...spec,texture,plate,mask};
   };
-  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut), foliage=FOLIAGE.map(cut);
-  return {clean,lanterns,flames,foliage,catRemoved:Boolean(cleanPlate)};
+  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut), foliage=FOLIAGE.map(cut), curtains=CURTAINS.map(cut);
+  return {clean,lanterns,flames,foliage,curtains,catRemoved:Boolean(cleanPlate)};
 }
 
 /** Long rests between naturally damped gusts. Hover is a single extra impulse,
  * not an infinite stronger swing; no animation clock advance while page hidden. */
 export function lanternAngle(spec, seconds, hoveredAt=-100) {
   const phase=(seconds+spec.offset)%spec.period;
-  const natural=phase<7.2 ? spec.amplitude*Math.sin(phase*2.65)*Math.exp(-phase*.37)*Math.min(phase/.7,1) : 0;
+  const natural=phase<10.5 ? spec.amplitude*Math.sin(phase*2.1)*Math.exp(-phase*.22)*Math.min(phase/.8,1) : 0;
   const h=seconds-hoveredAt;
-  const hover=h>=0&&h<3.8 ? .020*Math.sin(h*3.7)*Math.exp(-h*.85) : 0;
-  return Math.max(-.035,Math.min(.035,natural+hover));
+  const hover=h>=0&&h<5.2 ? .030*Math.sin(h*2.9)*Math.exp(-h*.65) : 0;
+  const breeze=.005*Math.sin(seconds*.67+spec.offset);
+  return Math.max(-.048,Math.min(.048,natural+hover+breeze));
 }

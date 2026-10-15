@@ -2,3 +2,4 @@ node_modules/
 test-results/
 .DS_Store
 assets/v25/street-clean.png
+__pycache__/

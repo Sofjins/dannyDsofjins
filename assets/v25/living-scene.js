@@ -1,9 +1,11 @@
 /** Rigid 2.5D props over the reference-locked architecture, rendered by Three.js. */
-import {prepareLivingAssets, lanternAngle} from './living-assets.js?v=living-street-2';
-import {createFoliage} from './foliage.js';
-import {createAtmosphere} from './atmosphere.js';
-import {createStreetCat} from './street-cat.js';
-export function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate}) {
+import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES} from './living-assets.js?v=living-street-3';
+import {createFoliage} from './foliage.js?v=living-street-3';
+import {createAtmosphere} from './atmosphere.js?v=living-street-3';
+import {createStreetCat} from './street-cat.js?v=living-street-3';
+import {createCurtains} from './curtains.js?v=living-street-3';
+import {createGutter} from './gutter.js?v=living-street-3';
+export async function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate}) {
   const H=1024,resources=[], prepared=prepareLivingAssets(image,cleanPlate);
   const root=new THREE.Group();root.name='LivingProps';root.visible=false;scene.add(root);
   const tx=canvas=>{
@@ -13,8 +15,8 @@ export function createLivingScene({THREE,scene,image,material,originalTexture,cl
   const cleanTexture=tx(prepared.clean);
   const cleanActive={value:0};
   const compileOriginal=material.onBeforeCompile;
-  const patchRects=[...prepared.lanterns,...prepared.flames,...prepared.foliage].map(spec=>spec.rect);
-  if(prepared.catRemoved)patchRects.push([628,678,188,114]);
+  const patchRects=[...prepared.lanterns,...prepared.flames,...prepared.foliage,...prepared.curtains].map(spec=>spec.rect);
+  if(prepared.catRemoved)patchRects.push(...CLEAN_PATCHES);
   material.onBeforeCompile=shader=>{
     compileOriginal(shader);
     shader.uniforms.uCleanMap={value:cleanTexture};
@@ -47,8 +49,10 @@ export function createLivingScene({THREE,scene,image,material,originalTexture,cl
   const lanterns=prepared.lanterns.map(s=>makeProp(s,.12));
   const flames=prepared.flames.map(s=>makeProp(s,.14));
   const foliage=createFoliage({THREE,parent:root,prepared:prepared.foliage,texture:tx});
+  const curtains=createCurtains({THREE,parent:root,prepared:prepared.curtains,texture:tx});
   const atmosphere=createAtmosphere({THREE,parent:root});
-  const cat=prepared.catRemoved?createStreetCat({THREE,parent:root}):null;
+  const gutter=createGutter({THREE,parent:root});
+  const cat=prepared.catRemoved?await createStreetCat({THREE,parent:root}):null;
   const sky=new THREE.HemisphereLight(0x9eabc3,0x2f2421,1.3);
   const amber=new THREE.PointLight(0xffb476,240000,1400,2);
   amber.position.set(360,550,260);
@@ -58,20 +62,6 @@ export function createLivingScene({THREE,scene,image,material,originalTexture,cl
   rim.position.set(-100,700,-120);
   root.add(sky,amber,cyan,rim);
   let enabled=false,clock=0;
-  // Sparse ground-only rain avoids overlaying streaks across the sign lettering.
-  const count=28,buffer=new Float32Array(count*6),seeds=[];
-  let seed=97402971;const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
-  for(let i=0;i<count;i++)seeds.push({x:rand()*1536,phase:rand(),speed:.25+rand()*.27,length:6+rand()*9});
-  const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.BufferAttribute(buffer,3));
-  const rm=new THREE.LineBasicMaterial({color:0x7795a3,transparent:true,opacity:.13,depthWrite:false,toneMapped:false});
-  const rain=new THREE.LineSegments(rg,rm);rain.renderOrder=6;root.add(rain);resources.push(rg,rm);
-  const rings=[];
-  for(let i=0;i<4;i++){
-    const g=new THREE.RingGeometry(9,9.6,40);
-    const m=new THREE.MeshBasicMaterial({color:i%2?0x405d79:0x805b35,transparent:true,opacity:0,depthWrite:false,toneMapped:false});
-    const mesh=new THREE.Mesh(g,m);mesh.position.set([290,1110,550,1310][i],[145,137,116,110][i],.17);
-    mesh.renderOrder=6;root.add(mesh);resources.push(g,m);rings.push(mesh);
-  }
   function enable(value){
     enabled=Boolean(value);root.visible=enabled;
     cleanActive.value=enabled?1:0;
@@ -79,31 +69,22 @@ export function createLivingScene({THREE,scene,image,material,originalTexture,cl
   }
   function update(t){
     clock=t;if(!enabled)return;
-    foliage.update(t);atmosphere.update(t);cat?.update(t);
-    amber.intensity=240000*(1+Math.sin(t*5.3)*.035);
+    foliage.update(t);curtains.update(t);atmosphere.update(t);gutter.update(t);cat?.update(t);
+    amber.intensity=240000*(1+Math.sin(t*5.3)*.085+Math.sin(t*12.7)*.035);
     cyan.intensity=270000*(1-Math.max(0,1-Math.abs(((t+2)%17.3)-7.5)/.09)*.28);
     for(const s of lanterns){
       s.pivot.rotation.z=-lanternAngle(s,t,s.hoveredAt);
-      const b=1+.016*Math.sin(t*1.7+s.offset);
+      const b=1+.08*Math.sin(t*1.7+s.offset)+.035*Math.sin(t*6.9+s.offset*3);
       s.mesh.material.color.setRGB(b,b,b);
     }
     for(let i=0;i<flames.length;i++){
-      const f=flames[i];f.pivot.rotation.z=.045*Math.sin(t*5.2+i*1.7)+.025*Math.sin(t*11.1+i);
-      f.mesh.scale.set(1+.1*Math.sin(t*7.1+i),1+.10*Math.sin(t*8.7+i*2),1);
-      const b=1+.10*Math.sin(t*9.3+i*.8);f.mesh.material.color.setRGB(b,b,b);
-    }
-    for(let i=0;i<count;i++){
-      const s=seeds[i],p=(s.phase+t*s.speed)%1,y=192-p*192,x=(s.x-p*31+1536)%1536,j=i*6;
-      buffer.set([x,y,.18,x-2,y-s.length,.18],j);
-    }
-    rg.attributes.position.needsUpdate=true;
-    for(let i=0;i<rings.length;i++){
-      const a=(t*.25+i*.7)%2,phase=Math.min(a,1),k=.4+phase*1.7;
-      rings[i].scale.set(k,k*.19,1);rings[i].material.opacity=a<1?.2*Math.sin(phase*Math.PI):0;
+      const f=flames[i];f.pivot.rotation.z=.12*Math.sin(t*5.2+i*1.7)+.065*Math.sin(t*11.1+i);
+      f.pivot.scale.set(1+.15*Math.sin(t*7.1+i),1+.22*Math.sin(t*8.7+i*2),1);
+      const b=1+.18*Math.sin(t*9.3+i*.8)+.06*Math.sin(t*17.1+i);f.mesh.material.color.setRGB(b,b,b);
     }
   }
   function react(id){const s=lanterns.find(s=>s.id===id);if(s)s.hoveredAt=clock;}
-  function snapshot(){return {enabled,clock,prepared:true,lanterns:lanterns.map(s=>({id:s.id,angle:s.pivot.rotation.z,pivot:[...s.pivot.position],rect:s.rect})),flames:flames.length,rainCount:count,foliage:foliage.snapshot(),atmosphere:atmosphere.snapshot(),cat:cat?.snapshot()||null};}
-  function dispose(){cat?.dispose();foliage.dispose();atmosphere.dispose();scene.remove(root);for(const r of resources)r.dispose();}
-  return {enable,update,react,snapshot,dispose,prepared,greet:()=>cat?.greet(),catPose:()=>cat?.snapshot()};
+  function snapshot(){return {enabled,clock,prepared:true,lanterns:lanterns.map(s=>({id:s.id,angle:s.pivot.rotation.z,pivot:[...s.pivot.position],rect:s.rect})),flames:flames.length,rainCount:0,foliage:foliage.snapshot(),curtains:curtains.snapshot(),gutter:gutter.snapshot(),atmosphere:atmosphere.snapshot(),cat:cat?.snapshot()||null};}
+  function dispose(){cat?.dispose();foliage.dispose();curtains.dispose();gutter.dispose();atmosphere.dispose();scene.remove(root);for(const r of resources)r.dispose();}
+  return {enable,update,react,snapshot,dispose,prepared,greet:()=>cat?.greet(),catPose:()=>cat?.pose(),setCatSeed:seed=>cat?.setSeed(seed)};
 }

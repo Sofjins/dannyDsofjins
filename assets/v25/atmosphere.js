@@ -37,19 +37,22 @@ export function createAtmosphere({ THREE, parent }) {
       #include <colorspace_fragment>
     }
   `;
-  for (const [index, width, height, centerY, depth, density] of [
-    [0, 1710, 300, 211, 18, .19],
-    [1, 1800, 290, 87, 160, .17],
-    [2, 540, 240, 142, 175, .12]
+  for (const [index, width, height, centerX, centerY, depth, density] of [
+    [0, 1710, 340, 768, 220, 18, .30],
+    [1, 1800, 330, 768, 87, 160, .25],
+    [2, 610, 310, 210, 175, 175, .21],
+    [3, 950, 920, 1230, 570, 80, .19],
+    [4, 530, 530, 430, 450, 85, .10]
   ]) {
     const geometry = new THREE.PlaneGeometry(width, height);
     const material = new THREE.ShaderMaterial({
       uniforms: { clock: { value: 0 }, seed: { value: index * 8.37 }, density: { value: density },
-        cold: { value: new THREE.Color('#63859b') }, warm: { value: new THREE.Color('#8f8177') } },
+        cold: { value: new THREE.Color(index === 4 ? '#9b7653' : '#6a9cbf') },
+        warm: { value: new THREE.Color(index === 3 ? '#648baf' : '#b09579') } },
       vertexShader, fragmentShader, transparent: true, depthWrite: false, toneMapped: false
     });
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(index === 2 ? 210 : 768, centerY, depth); mesh.renderOrder = 11 + index;
+    mesh.position.set(centerX, centerY, depth); mesh.renderOrder = 11 + index;
     parent.add(mesh); layers.push(mesh); resources.push(geometry, material);
   }
   return {

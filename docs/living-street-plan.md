@@ -1,35 +1,43 @@
 # Living street: direction and implementation
 
-## Brief
+## Brief and approach
 
-Use `two_shops.png` for the composition: warm Magic Shop on the left, cool Software Hub on the right. Borrow the second reference's drifting mist and warm/cool atmosphere. The street is the landing, and each door transitions to its own world. Interior scenes will be planned separately.
+Keep the supplied two-shop composition: warm Magic Shop left, cool Software Hub right. Use the second reference for blue atmospheric mist and warm pools of light, not rain. The landing fills the viewport. Its doors retain existing destination pages; new interiors are out of scope.
 
-## Chosen approach
+This is a hybrid scene, not a fully navigable 3D street. Architecture stays on a rigid reference-matched quad. Nine plant clusters and three curtain panels are separate textured meshes with anchored deformation; lanterns and flames are registered cutouts. A licensed, authored 3D cat receives warm/cool scene lighting and a contact shadow. Five shader mist layers add depth.
 
-Start with a hybrid Three.js scene. The supplied architecture stays rigid and keeps its fine detail. Moving objects are separated from that artwork and have their own geometry, transforms and timelines. This provides a closer match than replacing the street with a procedural full-3D blockout. A fully navigable street would require authored geometry, materials, lighting and models as a later asset-production phase.
+## Character and motion
 
-## Implementation stages
+The free Somali Cat Animated ver 1.2 by DreamNoms replaces the earlier procedural character. Five authored clips are retained: Idle, WalkClean, SitDown, SittingIdle and StandUp. See [credits](../assets/v25/models/CREDITS.md).
 
-1. **Separate the artwork.** Preserve the original WebP for fallback and Original mode. Reconstruct the pavement behind the painted cat, then composite only that small region into the live background. Keep the existing lantern/flame cutouts. Extract five foliage silhouettes, reconstruct their narrow exposed boundaries, and give them anchored meshes.
-2. **Animate the cat.** Use an independent 3D character with paired leg joints, inverse-kinematic paw placement, an articulated tail, a head and ears, and localized warm/cool illumination. Its 36-second route connects the water bowl to the crate beside the bicycle. The sequence includes drink, walk, crouch, jump, absorb the landing, perch, jump down and return. Jump trajectories and crate height are shared testable coordinates. The current model is procedural; replacing its anatomy/materials with a bespoke GLB is the main quality upgrade if browser review shows it does not fit the artwork.
-3. **Add secondary motion.** Stems stay planted while leaf tips move. Lantern impulses decay, flames have independent rhythms, and selected neon segments briefly dim. The neon dip also reaches its pavement reflection. Three shader planes place drifting mist behind and in front of the character; existing sparse ground drizzle and puddle rings remain.
-4. **Make the doors feel like entrances.** Accessible links stay aligned to the openings. Clicking shifts the view toward that doorway and fades into the existing destination. These pages remain temporary destinations until the second scenes are designed.
-5. **Verify and publish.** Preserve full-street framing, explicit mobile close views, an untouched Original mode, reduced-motion support, tab visibility pausing and no-WebGL navigation. Run motion/contact checks, real WebGL screenshots and both door routes. Push to the existing repository; Coolify auto-deploys it.
+A seeded behavior planner chooses destinations, variable walking speeds, 10–46 second rests and drinking visits. The cat also visits the left side; it does not repeat a fixed two-second or fixed-length route. Crate visits include anticipation, a ballistic arc, leg tucking and a front-first landing, then a longer seated rest. These jump/drink adjustments are custom skeletal animation on the existing model, not authored source clips. Ground is y=778 and crate top y=707 in artwork coordinates. Actual skeleton contact checks accompany trajectory tests.
+
+## Lighting, signs and interaction
+
+- Software Hub uses a larger Hub word. The three smaller terminal placards pulse independently; Canoodling carries an orange Claude-style asterisk.
+- Coffee/cup and OPEN 24/7 sit at the window's bottom-left. Coffee has irregular short power dips, not a constant blink. A narrow vertical Japanese development sign occupies the right side.
+- Lanterns retain gentle breeze between stronger damped gusts. Their light and candle light vary independently.
+- Three individual gutter droplets fall into the bowl every 7.4 seconds; ripples start after impact. There is no rain sheet or continuous stream.
+- Doors remain keyboard-accessible links, with a short entry transition. Mobile explicitly focuses each storefront while persistent links keep both destinations reachable.
+- Original mode and reduced motion restore the untouched artwork. No-WebGL fallback preserves navigation.
 
 ## Quality gates
 
-- Exactly one visible cat in live mode, with no painted duplicate at the bowl.
-- Paws land at image coordinate y=707 on the bicycle-side crate. Walking feet use joint solving rather than translating an unmoving silhouette.
-- The roof and shop architecture stay pixel-stable while the independently registered props move.
-- Original mode restores the supplied image without the clean patch or animated props.
-- Fog stays subtle enough to retain readable signs and the warm/cool separation.
-- The model must be judged in motion at actual display size. Automated animation tests do not establish cinematic asset quality.
-- Door routes work on desktop, mobile and when WebGL is unavailable.
+Real browser tests verify full-viewport cover, original-image color fidelity, rigid architecture, independent props, visible neon flicker at the new Coffee location, cat states, both door routes and mobile/reduced-motion/fallback behavior. Pure tests cover ten minutes of continuous trajectories, deterministic seeds, varied schedules, GLB contents and actual skeletal landing contacts. Screenshots and browser recordings remain necessary for visual judgement.
+
+The hybrid approach cannot reveal unseen sides of plants or architecture. Custom jump adaptation should be reviewed at actual display size; it is not equivalent to a film-quality animated asset.
 
 ## Asset provenance
 
-`assets/v25/street-master.webp` is the existing repository's derivative of the user's supplied artwork. `assets/v25/street-clean.webp` is a size-optimized derivative of the cat-removal edit generated with the built-in imagegen tool. Only a 188 × 114 pixel patch is composited into the live scene; the rest of the generated image is not substituted for the approved street. The cat geometry, motion, mist and plant mesh animation are authored in code. The vendor bundle is Three.js 0.184.0; its upstream license is retained beside the bundle.
+`street-master.webp` is the repository's derivative of the supplied two-shop artwork. `street-clean.webp` is a WebP export of successive built-in imagegen edits. Only five small feathered rectangles are composited into live mode: cat removal [628,678,188,114], enlarged Hub [1090,188,145,95], compact placards [1231,112,243,205], Coffee relocation [1106,548,216,151], Japanese sign [1330,312,54,223]. Everything outside those and the independently animated cutouts keeps original pixels. Original mode never uses the edited plate.
 
-### Clean-plate prompt
+Generated images are artwork edits, not new 3D models. The model is separately licensed; Three.js' upstream license is retained beside the vendor bundle.
 
-Use case: precise-object-edit. Edit target: the supplied 1536 x 1024 two-shop street artwork. Asset type: clean background plate for an interactive Three.js scene. Remove ONLY the black cat near the center bottom (approximately x=646..801, y=685..785) and its cast shadow. Reconstruct the small area behind it as continuous realistically textured stone pavement, curb, and the dark base of the existing plant pots and wall, matching their exact perspective and lighting. Keep the water bowl at x=792 y=761. Keep absolutely everything else unchanged: both storefronts, composition, all lettering, lanterns, plants, bicycle, boxes, wet street reflections, exact framing and dimensions, black levels and color grade. Do not add any animal or new object. The result must look like the very same image photographed with the cat absent. This is a narrowly localized removal, not a redesign.
+### Image-edit specifications
+
+1. **Clean plate — precise-object-edit.** Remove only the painted cat and its shadow around x646–801/y685–785. Reconstruct pavement, curb and pot bases in the same perspective and lighting. Preserve the bowl, both storefronts, lettering, lanterns, plants, bicycle, crates, framing and color grade. No replacement animal.
+2. **Hub lettering — text-localization.** Enlarge Hub to visually match Software while keeping the same blue neon tube style, sign border and perspective. Do not redesign the storefront.
+3. **Terminal placards — precise-object-edit.** Make the three Canoodling / git commit / git push placards more compact. Place an orange Claude-style asterisk beside Canoodling. Preserve surrounding cables, masonry and all other signs.
+4. **Coffee and Japanese neon — precise-object-edit/text-localization.** Move the existing cup, COFFEE and opening hours from the bottom-right to the bottom-left of the Software Hub window. Use OPEN above 24/7, not WORKING. Restore the old location as dark window glass. Add one slim, simple vertical development/programming neon at the right, with blue-violet Japanese lettering. Keep all other scene elements unchanged.
+
+The final selected image edit is `exec-300c1bdf-5a52-4ce6-9ec6-d939f7df0781.png`, generated in this task and exported at original 1536×1024 resolution. Runtime feathered patch compositing prevents incidental changes elsewhere in that generated plate from replacing approved artwork.

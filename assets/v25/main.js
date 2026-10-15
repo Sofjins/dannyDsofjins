@@ -7,7 +7,7 @@ if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-2';
+  const VERSION = 'living-street-3';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -62,8 +62,8 @@ function boot(root) {
   views.setAttribute('role', 'group'); views.setAttribute('aria-label', 'Street framing');
   views.innerHTML = '<button type="button" data-view="full" aria-pressed="true">Full street</button><button type="button" data-view="magic" aria-pressed="false">Magic view</button><button type="button" data-view="software" aria-pressed="false">Software view</button>';
   const controls = el('div', 'reference-controls');
-  const note = el('p', 'reference-note');
-  note.textContent = 'Two worlds. One curious mind.';
+  const note = el('div', 'reference-note');
+  note.innerHTML = 'Two worlds. One curious mind.<details class="scene-credits"><summary>Scene credits</summary><div>Cat: <a href="https://sketchfab.com/3d-models/somali-cat-animated-ver-12-e185c3fd92b64c32b4515a32b29252fc" target="_blank" rel="noopener">Somali Cat</a> by DreamNoms, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Converted and relit for this scene.</div></details>';
   const links = el('nav', 'gateway-world-links');
   links.setAttribute('aria-label', 'Shop destinations');
   links.innerHTML = '<a href="#/magic" data-gateway-door="magic">Magic Shop <span aria-hidden="true">↗</span></a><a href="#/software" data-gateway-door="software">Software Hub <span aria-hidden="true">↗</span></a>';
@@ -83,15 +83,14 @@ function boot(root) {
     if (state.disposed) return;
     const sw = stage.clientWidth, sh = stage.clientHeight;
     if (!sw || !sh) return;
-    let scale = Math.min(sw / W, sh / H, 1);
+    const scale = Math.max(sw / W, sh / H);
     let cx = W / 2, cy = H / 2;
     if (mobile.matches && state.view !== 'full') {
-      // An explicit close view, never an automatic crop of the initial composition.
-      scale = Math.min(Math.max(sw / 740, sh / 960), 1);
-      cx = state.view === 'magic' ? 390 : 1140; cy = 485;
+      cx = state.view === 'magic' ? 420 : 1130;
     }
     const aw = W * scale, ah = H * scale;
     art.style.width = `${aw}px`; art.style.height = `${ah}px`;
+    cx = Math.max(sw / scale / 2, Math.min(W - sw / scale / 2, cx));
     art.style.left = `${sw / 2 + (W / 2 - cx) * scale}px`;
     art.style.top = `${sh / 2 + (H / 2 - cy) * scale}px`;
     if (renderer && (Math.abs(aw - state.width) > .1 || Math.abs(ah - state.height) > .1)) {
@@ -236,7 +235,7 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('./three-vendor.js');
+      THREE = await import('./three-vendor.js?v=living-street-3');
       await still.decode();
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
@@ -268,23 +267,30 @@ function boot(root) {
           float warm = clamp((diffuseColor.r - diffuseColor.b) * 6.0, 0.0, 1.0);
           float cool = clamp(max(diffuseColor.b, diffuseColor.g) * 6.0 - diffuseColor.r, 0.0, 1.0);
           float flicker = 0.0;
-          flicker += lightMask(px,vec2(354.0,552.0),vec2(12.0,23.0)) * sin(uClock*7.1) * .032;
-          flicker += lightMask(px,vec2(475.0,563.0),vec2(15.0,29.0)) * sin(uClock*5.3+1.8) * .04;
-          flicker += lightMask(px,vec2(370.0,462.0),vec2(12.0,20.0)) * sin(uClock*6.6+3.2) * .03;
-          flicker += lightMask(px,vec2(582.0,457.0),vec2(13.0,23.0)) * sin(uClock*8.3+2.3) * .03;
-          flicker += lightMask(px,vec2(158.0,307.0),vec2(43.0,66.0)) * sin(uClock*1.5+1.0) * .012;
-          flicker += lightMask(px,vec2(670.0,301.0),vec2(41.0,66.0)) * sin(uClock*1.7+2.0) * .012;
-          float neon = lightMask(px,vec2(1100.0,238.0),vec2(94.0,29.0)) * sin(uClock*2.3) * .01;
-          // Brief, independent, downward-only ageing in specific sign segments.
-          float dipA = 1.0-smoothstep(.035,.095,abs(mod(uClock+1.5,13.7)-6.1));
-          float dipB = 1.0-smoothstep(.025,.065,abs(mod(uClock+4.1,19.3)-8.2));
-          neon -= lightMask(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .48;
-          neon -= lightMask(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .30;
-          neon -= lightMask(px,vec2(1166.0,234.0),vec2(41.0,22.0)) * (1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5))) * .30;
+          flicker += lightMask(px,vec2(354.0,552.0),vec2(31.0,49.0)) * sin(uClock*7.1) * .13;
+          flicker += lightMask(px,vec2(475.0,563.0),vec2(62.0,64.0)) * (sin(uClock*5.3+1.8)*.16+sin(uClock*12.7)*.04);
+          flicker += lightMask(px,vec2(370.0,462.0),vec2(35.0,46.0)) * sin(uClock*6.6+3.2) * .12;
+          flicker += lightMask(px,vec2(582.0,457.0),vec2(39.0,54.0)) * sin(uClock*8.3+2.3) * .12;
+          flicker += lightMask(px,vec2(158.0,307.0),vec2(118.0,125.0)) * (sin(uClock*1.7)*.12+sin(uClock*6.9)*.04);
+          flicker += lightMask(px,vec2(670.0,301.0),vec2(110.0,125.0)) * (sin(uClock*1.7+2.2)*.12+sin(uClock*6.9+6.6)*.04);
+          float neon = lightMask(px,vec2(1044.0,238.0),vec2(190.0,44.0)) * sin(uClock*2.3) * .065;
+          float coffeeTime = mod(uClock,11.7);
+          float dipB = (1.0-smoothstep(.08,.13,abs(coffeeTime-2.4)))
+            +(1.0-smoothstep(.035,.075,abs(coffeeTime-2.82)))
+            +(1.0-smoothstep(.23,.29,abs(coffeeTime-3.4)))
+            +(1.0-smoothstep(.04,.09,abs(coffeeTime-7.9)));
+          float dipA = 1.0-smoothstep(.08,.15,abs(mod(uClock,9.1)-4.6));
+          neon += lightMask(px,vec2(1360.0,161.0),vec2(82.0,24.0)) * (.13*sin(uClock*2.7)-.8*(1.0-smoothstep(.05,.12,abs(mod(uClock,14.3)-5.7))));
+          neon += lightMask(px,vec2(1360.0,210.0),vec2(84.0,24.0)) * (.10*sin(uClock*2.1+2.0)-dipA*1.7);
+          neon += lightMask(px,vec2(1360.0,258.0),vec2(84.0,23.0)) * (.12*sin(uClock*1.8+4.0)-.95*(1.0-smoothstep(.06,.14,abs(mod(uClock,12.9)-8.4))));
+          neon -= lightMask(px,vec2(1164.0,611.0),vec2(44.0,54.0)) * dipB * 4.5;
+          neon += lightMask(px,vec2(1164.0,668.0),vec2(38.0,27.0)) * sin(uClock*1.9+3.0) * .12;
+          neon += lightMask(px,vec2(1360.0,398.0),vec2(24.0,78.0)) * (.16*sin(uClock*1.3)-.85*(1.0-smoothstep(.08,.16,abs(mod(uClock,16.7)-6.2))));
+          neon -= lightMask(px,vec2(1170.0,234.0),vec2(59.0,34.0)) * (1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5))) * .8;
           float hubDip = 1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5));
           neon -= lightMask(px,vec2(1115.0,893.0),vec2(126.0,112.0)) * hubDip * .15;
-          neon -= lightMask(px,vec2(1280.0,875.0),vec2(88.0,96.0)) * dipB * .12;
-          flicker += lightMask(px,vec2(410.0,858.0),vec2(163.0,99.0)) * sin(uClock*5.3+1.8) * .018;
+          neon -= lightMask(px,vec2(1280.0,875.0),vec2(88.0,96.0)) * dipB * .48;
+          flicker += lightMask(px,vec2(410.0,858.0),vec2(163.0,99.0)) * sin(uClock*5.3+1.8) * .055;
           float gain = uLive * (warm*flicker + cool*neon);
           gain += uMagic * lightMask(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
           gain += uSoftware * lightMask(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
@@ -309,11 +315,11 @@ function boot(root) {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
       const cleanPlate = new Image();
-      cleanPlate.src = new URL('./street-clean.webp', import.meta.url).href;
+      cleanPlate.src = new URL('./street-clean.webp?v=living-street-3', import.meta.url).href;
       await cleanPlate.decode();
       if (state.disposed) return;
-      const { createLivingScene } = await import('./living-scene.js?v=living-street-2');
-      living = createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate });
+      const { createLivingScene } = await import('./living-scene.js?v=living-street-3');
+      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate });
       catTarget = el('button', 'living-cat-target');
       catTarget.type = 'button';
       catTarget.setAttribute('aria-label', 'Say hello to the street cat');
@@ -357,6 +363,7 @@ function boot(root) {
     seek: seconds => { testTime = Number.isFinite(seconds) ? Math.max(0,seconds) : null; schedule(); },
     nudgeLantern: id => { living?.react(id); schedule(); },
     greetCat: () => { living?.greet(); schedule(); },
+    setCatSeed: seed => { living?.setCatSeed(seed); schedule(); },
     snapshot: () => ({ renderer: state.renderer, reason: state.reason, mode: state.mode,
       motion: living?.snapshot() || null, view: state.view, camera: camera?.type || null,
       vertices: plane?.geometry.attributes.position.count || 0,
