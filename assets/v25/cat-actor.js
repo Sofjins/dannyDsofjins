@@ -1,8 +1,8 @@
-import { createCatBehavior } from './cat-motion.js?v=living-street-4';
-import { createCatRig } from './cat-rig.js?v=living-street-4';
+import { createCatBehavior } from './cat-motion.js?v=living-street-5';
+import { createCatRig } from './cat-rig.js?v=living-street-5';
 
 export function createCatActor(THREE, model, seed = 97402971) {
-  const root = new THREE.Group(); root.name = 'SomaliCat';
+  const root = new THREE.Group(); root.name = 'BlackStreetCat';
   const orientation = new THREE.Group(); root.add(orientation); orientation.add(model.scene);
   const mixer = new THREE.AnimationMixer(model.scene);
   const actions = new Map(model.animations.map(clip => [clip.name, mixer.clipAction(clip).play()]));
@@ -17,7 +17,7 @@ export function createCatActor(THREE, model, seed = 97402971) {
     if (!object.isMesh) return;
     object.skeleton?.update();
     object.renderOrder = 8; object.frustumCulled = false;
-    object.material.roughness = .92; object.material.metalness = 0;
+    object.castShadow = true; object.layers.enable(1);
     for (let index = 0; index < object.geometry.attributes.position.count; index++) {
       object.getVertexPosition(index, point).applyMatrix4(object.matrixWorld); bounds.expandByPoint(point);
     }
@@ -51,7 +51,8 @@ export function createCatActor(THREE, model, seed = 97402971) {
     root, update, pose: () => pose, greet: () => { greetingAt = seconds; },
     setSeed: nextSeed => { behavior = createCatBehavior(nextSeed); greetingAt = -100; update(0); },
     snapshot: () => ({ ...pose, joints, model: 'authored-gltf', author: 'DreamNoms',
-      clips: [...actions.keys()], jumpReady: true, seed: behavior.seed, plan: behavior.plan(), contacts: rig.contacts() }),
+      clips: [...actions.keys()], jumpReady: true, coat: 'black-short-fur', tailScale: [.48, .72, .48],
+      seed: behavior.seed, plan: behavior.plan(), contacts: rig.contacts() }),
     dispose: () => { mixer.stopAllAction(); mixer.uncacheRoot(model.scene); }
   };
 }

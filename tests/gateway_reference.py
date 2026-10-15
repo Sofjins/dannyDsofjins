@@ -64,7 +64,9 @@ def load(page, *, block_gl=False):
         page.add_script_tag(content=(ROOT/'assets/site.js').read_text())
         module=(ROOT/'assets/v25/main.js').read_text()
         framing=(ROOT/'assets/v25/framing.js').read_text().replace('export function','function')
-        module=module.replace("import { streetFraming } from './framing.js?v=living-street-4';",framing)
+        module=module.replace("import { streetFraming } from './framing.js?v=living-street-5';",framing)
+        water=(ROOT/'assets/v25/water-light.js').read_text().replace('export const','const')
+        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-5';",water)
         page.add_script_tag(type='module', content=module)
     else:
         # Use exactly the production-pinned Three.js package, served locally for deterministic CI.
@@ -128,7 +130,7 @@ try:
             temporal = np.abs(live_a-live_b)
             check('live_light_changes_pixels',bool(temporal.max()>0))
             architecture_error=float(np.abs(live_a-actual)[105:190,240:510].mean())
-            check('unlit_architecture_keeps_original_colour',architecture_error<.15,architecture_error)
+            check('peripheral_grade_is_subtle',architecture_error<10,architecture_error)
             # Immutable architecture region: roofline and wood sign stay pixel-stable.
             check('architecture_not_animated',int(temporal[105:190,240:510].max())==0)
             page.locator('.gateway-door--magic').hover();page.wait_for_timeout(300)

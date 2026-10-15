@@ -1,7 +1,34 @@
-import { createCatActor } from './cat-actor.js?v=living-street-4';
+import { createCatActor } from './cat-actor.js?v=living-street-5';
 
 export async function createStreetCat({ THREE, parent }) {
   const model = await new THREE.GLTFLoader().loadAsync(new URL('./models/somali-cat.glb', import.meta.url).href);
+  const coat = await new THREE.TextureLoader().loadAsync(new URL('./models/black-shorthair-fur.webp', import.meta.url).href);
+  coat.colorSpace = THREE.SRGBColorSpace; coat.flipY = false; coat.anisotropy = 8;
+  const oldMaterials = new Set();
+  model.scene.traverse(mesh => {
+    if (!mesh.isMesh) return;
+    oldMaterials.add(mesh.material);
+    mesh.material = new THREE.MeshPhysicalMaterial({ map: coat, color: 0xb6b7bc, roughness: .84,
+      metalness: 0, sheen: .65, sheenColor: 0x6b717a, sheenRoughness: .86 });
+    if (mesh.name.startsWith('Eye')) {
+      mesh.material.dispose();
+      mesh.material = new THREE.MeshPhysicalMaterial({ color: 0x69734c, roughness: .22, clearcoat: 1, clearcoatRoughness: .12 });
+      mesh.material.onBeforeCompile = shader => {
+        shader.vertexShader = 'varying vec3 eyePosition;\n' + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\neyePosition = position / .12;');
+        shader.fragmentShader = 'varying vec3 eyePosition;\n' + shader.fragmentShader;
+        shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
+          #include <color_fragment>
+          float irisRadius = length(eyePosition.xy);
+          float pupil = 1.0-smoothstep(.67,.76,length(eyePosition.xy*vec2(4.2,1.1)));
+          float fibers = .9+.1*sin(atan(eyePosition.y,eyePosition.x)*73.0+irisRadius*18.0);
+          diffuseColor.rgb = mix(vec3(.13,.16,.07)*fibers,vec3(.002,.003,.003),pupil);
+          diffuseColor.rgb *= 1.0-smoothstep(.72,1.0,irisRadius)*.8;
+        `);
+      };
+    }
+  });
+  for (const material of oldMaterials) { material.map?.dispose(); material.dispose(); }
   const seed = new Uint32Array(1); crypto.getRandomValues(seed);
   const actor = createCatActor(THREE, model, seed[0]); parent.add(actor.root);
   const shadowCanvas = Object.assign(document.createElement('canvas'), { width: 128, height: 64 });
@@ -24,7 +51,7 @@ export async function createStreetCat({ THREE, parent }) {
   }
   update(0);
   return {
-    update, pose: actor.pose, greet: actor.greet, setSeed: actor.setSeed, snapshot: actor.snapshot,
+    update, root: actor.root, pose: actor.pose, greet: actor.greet, setSeed: actor.setSeed, snapshot: actor.snapshot,
     dispose() {
       actor.dispose(); parent.remove(actor.root, shadow);
       const resources = new Set([shadowTexture, shadowMaterial, shadowGeometry]);

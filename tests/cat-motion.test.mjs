@@ -4,6 +4,28 @@ import { readFileSync } from 'node:fs';
 import { catPose, createCatBehavior, CAT_GROUND, CAT_BOX_TOP } from '../assets/v25/cat-motion.js';
 import { dripState, DRIP_CYCLE, DRIP_STARTS, FALL_TIME, BOWL } from '../assets/v25/gutter.js';
 import { streetFraming } from '../assets/v25/framing.js';
+import { createWetStreet, STREET_SURFACE } from '../assets/v25/wet-street.js';
+
+test('wet floor uses a tilted reflection camera and a real shadow receiver with disposable resources', async () => {
+  const THREE = await import('three');
+  const { Reflector } = await import('three/addons/objects/Reflector.js');
+  const parent = new THREE.Group();
+  const texture = new THREE.Texture();
+  const floor = createWetStreet({ THREE: { ...THREE, Reflector }, parent, texture });
+  const reflection = parent.getObjectByName('PuddleCatReflection');
+  const shadow = parent.getObjectByName('CatCastShadowReceiver');
+  assert.ok(reflection.isReflector && shadow.receiveShadow);
+  assert.equal(reflection.position.y, STREET_SURFACE.height);
+  assert.equal(reflection.position.z, STREET_SURFACE.depth);
+  assert.ok(Math.abs(Math.sin(-reflection.rotation.x) - .85) < .0001);
+  assert.ok(parent.children.some(object => object.isDirectionalLight && object.castShadow));
+  floor.update(41, { x: 800, surfaceY: 778 });
+  assert.equal(reflection.material.uniforms.clock.value, 41);
+  assert.deepEqual(reflection.material.uniforms.catPosition.value.toArray(), [800, 778]);
+  floor.setVisible(false); assert.equal(reflection.visible, false);
+  floor.dispose(); texture.dispose();
+  assert.equal(parent.children.length, 0);
+});
 
 test('full street always fits without crop or distortion, with environment beyond its edges', () => {
   for (const [width, height] of [[1536, 1024], [1710, 896], [1440, 900], [2560, 1080], [1024, 768], [844, 390], [390, 844], [360, 640]]) {

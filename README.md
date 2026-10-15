@@ -19,10 +19,12 @@ Open http://localhost:4173. Production is static HTML/CSS/JS and local assets; C
 ## Scene behavior
 
 - DreamNoms' free CC BY 4.0 Somali Cat uses its authored walk, idle, sit-down, sitting and stand-up clips. Custom rig adjustments handle drinking, crouching, jumping and front-first landing; these are not motion-captured jump clips.
+- The same authored mesh now has a detailed black short-fur atlas, a restrained physical sheen, separate iris materials and a shorter, thinner tail. It is a retextured/adapted asset, not a newly sourced photorealistic model.
+- Wet paving has a separate tilted planar reflection pass rendering the actual animated cat, a soft shadow-map receiver and contact shading. Water normals subtly break reflected highlights; paving, typography, grates and architecture are not displaced.
 - Each visit gets a randomized schedule: long rests, left/right walks, drinking and occasional crate visits. Motion is seeded for reproducible tests, not a short repeating loop. Clicking the cat gives a brief greeting without changing its path.
 - Nine foliage meshes and three burgundy curtain panels have individually anchored motion. Architecture never bends. These are textured cutouts, not fully volumetric plant models.
 - Lanterns sway independently, candle flames and local illumination vary, and separate neon signs have different rhythms. Coffee now sits at the window's bottom-left with OPEN 24/7; a slim Japanese development sign sits on the right.
-- Five mist layers add depth without rain. The gutter releases three drops every 7.4 seconds, with small bowl ripples after impact.
+- Five local mist layers and a low-resolution viewport-wide haze pass add depth without rain. The weathered, hollow gutter releases three drops every 7.4 seconds, with small bowl ripples after impact.
 - The original composition fits the viewport without cropping or stretching. Generated environment extensions fill wider and taller screens rather than black bars. Only explicit mobile focus controls select a close-up; destination links remain accessible.
 - Original mode restores the untouched reference. Reduced motion and WebGL failure retain the still artwork and working navigation. Animation pauses when the tab or gateway is hidden.
 

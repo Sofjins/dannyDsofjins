@@ -1,8 +1,9 @@
-import { FOLIAGE } from './foliage.js?v=living-street-4';
-import { CURTAINS } from './curtains.js?v=living-street-4';
+import { FOLIAGE } from './foliage.js?v=living-street-5';
+import { CURTAINS } from './curtains.js?v=living-street-5';
 
 export const CLEAN_PATCHES = [[628, 678, 188, 114], [1090, 188, 145, 95], [1231, 112, 243, 205],
   [1106, 548, 216, 151], [1330, 312, 54, 223]];
+export const PAVEMENT_PATCH = [1215, 821, 110, 100];
 
 export const LANTERNS = [
   { id:'left', rect:[116,214,100,176], pivot:[164,224],
@@ -64,12 +65,14 @@ function restoreBehind(source, mask) {
   ctx.putImageData(result,0,0);return out;
 }
 
-export function prepareLivingAssets(image, cleanPlate) {
+export function prepareLivingAssets(image, cleanPlate, pavementPlate) {
   const clean=makeCanvas(1536,1024),cc=clean.getContext('2d');cc.drawImage(image,0,0);
-  if (cleanPlate) for (const [left, top, width, height] of CLEAN_PATCHES) {
+  const patches = cleanPlate ? CLEAN_PATCHES.map(rect => ({ rect, source: cleanPlate })) : [];
+  if (pavementPlate) patches.push({ rect: PAVEMENT_PATCH, source: pavementPlate });
+  for (const { rect: [left, top, width, height], source } of patches) {
     const patch = makeCanvas(width, height);
     const context = patch.getContext('2d');
-    context.drawImage(cleanPlate, left, top, width, height, 0, 0, width, height);
+    context.drawImage(source, left, top, width, height, 0, 0, width, height);
     const pixels = context.getImageData(0, 0, width, height);
     for (let row = 0; row < height; row++) for (let column = 0; column < width; column++) {
       const edge = Math.min(column, row, width - 1 - column, height - 1 - row);

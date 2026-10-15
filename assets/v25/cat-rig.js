@@ -48,6 +48,8 @@ export function createCatRig(THREE, model) {
       tilt('Head', -.24 * pose.drink + pose.drink * Math.sin(seconds * 7.4) * .018);
       tilt('TailBase', -.4 * pose.jump - .16 * pose.drink);
       tilt('TailBaseMiddle', .2 * pose.jump);
+      nodes.get('TailBase').scale.set(.48, .72, .48);
+      nodes.get('TailBase').updateWorldMatrix(false, true);
       const active = pose.jump > 0 || pose.drink > 0 || pose.mode === 'land' || pose.mode === 'crouch';
       if (!active) return;
       for (const foot of feet) {

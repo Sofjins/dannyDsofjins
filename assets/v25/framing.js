@@ -8,5 +8,5 @@ export function streetFraming(width, height, view = 'full') {
   return { scale, artWidth, artHeight, left: width / 2 + (768 - center) * scale, top: height / 2,
     close, horizontal, surroundWidth: horizontal ? artWidth * 2 : artWidth,
     surroundHeight: horizontal ? artHeight : artWidth * 2.25,
-    feather: close || Math.abs(width / height - 1.5) < .002 ? 0 : Math.min(24, scale * 28) };
+    feather: close || Math.abs(width / height - 1.5) < .002 ? 0 : Math.min(64, scale * 76) };
 }

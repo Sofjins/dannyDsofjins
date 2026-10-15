@@ -42,6 +42,9 @@ try {
   verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored);
   verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.rainCount === 0);
   verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6);
+  verify('cat has its own planar reflection and cast shadows', initial.motion.pavement.reflection === 'planar-skinned-mesh' && initial.motion.pavement.shadows === 'pcf-cast-and-contact');
+  verify('short black coat and reduced tail', initial.motion.cat.coat === 'black-short-fur' && initial.motion.cat.tailScale[0] < .6);
+  verify('mist reaches the viewport, not only the source artwork', await page.locator('.viewport-mist').count() === 1);
   const art = page.locator('.reference-art');
   const frame = async seconds => {
     await page.evaluate(time => window.__gatewayTest.seek(time), seconds);
@@ -62,11 +65,22 @@ try {
   };
   const early = await frame(.35);
   const later = await frame(1.8);
+  for (const [label, rectangle] of Object.entries({ leftTree: [0, 424, 180, 190], doorwayPot: [251, 643, 95, 80], maple: [554, 448, 160, 150], bowlPlant: [722, 553, 137, 140], rightVine: [1385, 384, 110, 176] })) {
+    verify(`${label} moves independently`, difference(early, later, rectangle).maximum > 3);
+  }
   verify('roof stays pixel-stable', difference(early, later, [240, 105, 270, 85]).maximum === 0);
   verify('lantern pixels move', difference(early, later, [116, 214, 100, 176]).maximum > 5);
   verify('foliage pixels move', difference(early, later, [554, 448, 160, 150]).maximum > 3);
   verify('mist pixels evolve', difference(early, later, [250, 800, 300, 150]).maximum > 0);
   verify('curtain pixels move', difference(early, later, [290, 315, 310, 145]).maximum > 4);
+  const reflected = await frame(90);
+  const catAt90 = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat);
+  await page.evaluate(() => window.__gatewayTest.setSurfaceVisible(false));
+  await page.waitForTimeout(120);
+  const dry = await frame(90);
+  const surfaceDelta = difference(reflected, dry, [Math.floor(catAt90.x-120), 778, 280, 100]);
+  verify('wet street actually renders the moving cat reflection and shadow', surfaceDelta.maximum > 3 && surfaceDelta.mean > .03, surfaceDelta);
+  await page.evaluate(() => window.__gatewayTest.setSurfaceVisible(true));
   const neonOn = await frame(2);
   const neonOff = await frame(2.4);
   if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`INITIAL_PREVIEW_BASE64=${(await art.screenshot({ type: 'jpeg', quality: 75 })).toString('base64')}`);
@@ -152,6 +166,10 @@ try {
   await page.waitForTimeout(160);
   await page.screenshot({ path: resolve(output, 'street-fullscreen-uncropped.png') });
   if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`WIDE_PREVIEW_BASE64=${(await page.screenshot({ type: 'jpeg', quality: 75 })).toString('base64')}`);
+  await page.setViewportSize({ width: 1024, height: 1365 });
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: resolve(output, 'street-tall-environment.png') });
+  if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`TALL_PREVIEW_BASE64=${(await page.screenshot({ type: 'jpeg', quality: 80 })).toString('base64')}`);
   await page.setViewportSize({ width: 1536, height: 1024 });
   await page.evaluate(() => { window.__gatewayTest.setView('full'); window.__gatewayTest.setMode('live'); });
   await frame(90);

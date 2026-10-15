@@ -29,12 +29,12 @@ export function createCurtains({ THREE, parent, prepared, texture }) {
           const offset = index * 3;
           const weight = Math.pow(Math.max(0, -rest[offset + 1]) / spec.rect[3], 1.7);
           const billow = Math.sin(seconds * 1.05 + spec.phase + rest[offset] * .021);
-          positions.setXYZ(index, rest[offset] + weight * billow * gust * 3.6,
-            rest[offset + 1] + weight * Math.sin(seconds * 1.3 + spec.phase + rest[offset] * .055) * 1.7,
-            weight * billow * 6);
+          positions.setXYZ(index, rest[offset] + weight * billow * gust * 7.5,
+            rest[offset + 1] + weight * Math.sin(seconds * 1.3 + spec.phase + rest[offset] * .055) * 2.6,
+            weight * billow * 10);
         }
         positions.needsUpdate = true;
-        const brightness = 1 + .022 * Math.sin(seconds * 1.05 + spec.phase);
+        const brightness = 1 + .035 * Math.sin(seconds * 1.05 + spec.phase);
         mesh.material.color.setRGB(brightness, brightness, brightness);
       }
     },

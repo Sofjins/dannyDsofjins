@@ -19,15 +19,35 @@ export function createGutter({ THREE, parent }) {
   const root = new THREE.Group(); root.name = 'GutterAndBowl'; parent.add(root);
   const resources = [];
   const pipePath = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(726, 830, 4), new THREE.Vector3(756, 830, 4),
-    new THREE.Vector3(784, 818, 4), new THREE.Vector3(790, 799, 4)
+    new THREE.Vector3(728, 827, 10), new THREE.Vector3(754, 826, 10),
+    new THREE.Vector3(775, 823, 10), new THREE.Vector3(786, 815, 12),
+    new THREE.Vector3(790, 798, 15)
   ]);
-  const pipeGeometry = new THREE.TubeGeometry(pipePath, 24, 3.2, 8, false);
-  const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x253037, roughness: .72, metalness: .62 });
+  const pipeGeometry = new THREE.TubeGeometry(pipePath, 48, 4.4, 20, false);
+  const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x393b34, roughness: .65, metalness: .68, side: THREE.DoubleSide });
+  pipeMaterial.onBeforeCompile = shader => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
+      #include <color_fragment>
+      float oxidation = fract(sin(dot(floor(vViewPosition * 1.3), vec3(12.9898,78.233,44.137))) * 43758.5453);
+      diffuseColor.rgb *= .72 + oxidation * .45;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.035,.052,.043), smoothstep(.82,.98,oxidation) * .32);
+    `);
+  };
   const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial); pipe.renderOrder = 2; root.add(pipe);
   resources.push(pipeGeometry, pipeMaterial);
+  const boreGeometry = new THREE.TubeGeometry(pipePath, 48, 3.4, 20, false);
+  const boreMaterial = new THREE.MeshStandardMaterial({ color: 0x121c1c, roughness: .9, side: THREE.DoubleSide });
+  const bore = new THREE.Mesh(boreGeometry, boreMaterial); bore.renderOrder = 2; root.add(bore);
+  resources.push(boreGeometry, boreMaterial);
+  for (const progress of [.10, .53, 1]) {
+    const geometry = new THREE.TorusGeometry(progress === 1 ? 3.9 : 4.5, progress === 1 ? .52 : .68, 8, 24);
+    const collar = new THREE.Mesh(geometry, pipeMaterial);
+    collar.position.copy(pipePath.getPointAt(progress));
+    collar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), pipePath.getTangentAt(progress));
+    collar.renderOrder = 3; root.add(collar); resources.push(geometry);
+  }
   const drops = DRIP_STARTS.map(() => {
-    const geometry = new THREE.SphereGeometry(1.15, 8, 8);
+    const geometry = new THREE.SphereGeometry(.8, 12, 12);
     const material = new THREE.MeshStandardMaterial({ color: 0xb8d6de, roughness: .12, metalness: .35,
       transparent: true, opacity: .64, depthWrite: false });
     const mesh = new THREE.Mesh(geometry, material); mesh.renderOrder = 3; root.add(mesh);
@@ -47,8 +67,8 @@ export function createGutter({ THREE, parent }) {
       drops.forEach(({ mesh, ring, splash }, index) => {
         const state = dripState(seconds, index);
         mesh.visible = state.falling;
-        mesh.position.set(DRIP_SOURCE.x + Math.sin(index * 2.4) * .7, 1024 - state.y, 6);
-        mesh.scale.set(.75, 1 + Math.min(2.4, state.speed * .0017), .65);
+        mesh.position.set(DRIP_SOURCE.x + Math.sin(index * 2.4) * .5, 1024 - state.y, 16);
+        mesh.scale.set(.8, 1 + Math.min(1.8, state.speed * .0012), .75);
         ring.visible = state.ripple;
         const progress = Math.max(0, state.impactAge) / .85;
         const radius = 1 + progress * 17;

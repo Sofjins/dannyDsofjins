@@ -2,14 +2,15 @@
  * Scene coordinates are the approved artwork's pixels (1536 x 1024).
  * This module enhances the existing static application; no server/build change required.
  */
-import { streetFraming } from './framing.js?v=living-street-4';
+import { streetFraming } from './framing.js?v=living-street-5';
+import { waterLightShader } from './water-light.js?v=living-street-5';
 
 const root = document.getElementById('gateway-experience');
 if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-4';
+  const VERSION = 'living-street-5';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -20,7 +21,7 @@ function boot(root) {
   const state = { mode: 'reference', view: 'full', renderer: 'loading', hover: null,
     magic: 0, software: 0, frame: 0, last: 0, entering: null, timer: 0,
     disposed: false, width: 0, height: 0, reason: null };
-  let THREE, renderer, scene, camera, material, plane, raycaster, living, catTarget;
+  let THREE, renderer, scene, camera, material, plane, raycaster, living, catTarget, viewportMist;
   let elapsed = 0, testTime = null;
   const pickMeshes = [];
   const resources = [];
@@ -96,13 +97,16 @@ function boot(root) {
     art.style.maskImage = framing.feather ? `linear-gradient(to ${direction},transparent,#000 ${framing.feather}px,#000 calc(100% - ${framing.feather}px),transparent)` : 'none';
     surround.dataset.axis = framing.horizontal ? 'wide' : 'portrait';
     surround.style.backgroundSize = `${framing.surroundWidth}px ${framing.surroundHeight}px`;
-    surround.style.backgroundPosition = framing.horizontal ? `calc(50% + ${aw * 32 / 1086}px) center` : `center calc(50% + ${aw * 63 / 836}px)`;
+    surround.style.backgroundPosition = framing.horizontal ? `calc(50% + ${aw * 32 / 1086}px) center` : `center calc(50% + ${aw * 42 / 836}px)`;
+    stage.style.setProperty('--focus-width', `${aw * .68}px`);
+    stage.style.setProperty('--focus-height', `${ah * .72}px`);
     if (renderer && (Math.abs(aw - state.width) > .1 || Math.abs(ah - state.height) > .1)) {
       const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(5000000 / Math.max(aw * ah, 1)));
       renderer.setPixelRatio(dpr);
       renderer.setSize(aw, ah, false);
     }
     state.width = aw; state.height = ah;
+    viewportMist?.layout(sw, sh, framing);
     schedule();
   }
   function setView(view) {
@@ -118,6 +122,7 @@ function boot(root) {
     for (const b of lighting.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
     uniforms.uLive.value = state.mode === 'live' ? 1 : 0;
     living?.enable(state.mode === 'live');
+    viewportMist?.enable(state.mode === 'live');
     if (catTarget && state.mode !== 'live') catTarget.hidden = true;
     state.last = 0;
     if (state.mode === 'reference') {
@@ -208,6 +213,7 @@ function boot(root) {
     uniforms.uClock.value = clock;
     uniforms.uMagic.value = state.magic; uniforms.uSoftware.value = state.software;
     renderer.render(scene, camera);
+    viewportMist?.update(clock, testTime !== null);
     if (live && testTime === null || Math.abs(state.magic - targetMagic) + Math.abs(state.software - targetSoftware) > .001) schedule();
   }
   function raycastAt(clientX, clientY) {
@@ -239,12 +245,14 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('./three-vendor.js?v=living-street-4');
+      THREE = await import('./three-vendor.js?v=living-street-5');
       await still.decode();
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.NoToneMapping;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.setClearColor(0x080b0e, 1);
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(0, W, H, 0, .1, 2500);
@@ -277,6 +285,8 @@ function boot(root) {
           flicker += lightMask(px,vec2(582.0,457.0),vec2(39.0,54.0)) * sin(uClock*8.3+2.3) * .12;
           flicker += lightMask(px,vec2(158.0,307.0),vec2(118.0,125.0)) * (sin(uClock*1.7)*.12+sin(uClock*6.9)*.04);
           flicker += lightMask(px,vec2(670.0,301.0),vec2(110.0,125.0)) * (sin(uClock*1.7+2.2)*.12+sin(uClock*6.9+6.6)*.04);
+          flicker += lightMask(px,vec2(782.0,389.0),vec2(30.0,58.0)) * (.24*sin(uClock*2.8)+.12*sin(uClock*8.9)-.75*(1.0-smoothstep(.03,.11,abs(mod(uClock,13.7)-6.1))));
+          flicker += lightMask(px,vec2(64.0,69.0),vec2(49.0,84.0)) * (.27*sin(uClock*1.6)+.10*sin(uClock*10.7)-1.1*(1.0-smoothstep(.04,.13,abs(mod(uClock,18.1)-9.3))));
           float neon = lightMask(px,vec2(1044.0,238.0),vec2(190.0,44.0)) * sin(uClock*2.3) * .065;
           float coffeeTime = mod(uClock,11.7);
           float dipB = (1.0-smoothstep(.08,.13,abs(coffeeTime-2.4)))
@@ -299,6 +309,7 @@ function boot(root) {
           gain += uMagic * lightMask(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
           gain += uSoftware * lightMask(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
           diffuseColor.rgb *= exp2(gain);
+          ${waterLightShader}
         `);
       };
       const geometry = new THREE.PlaneGeometry(W, H, 1, 1);
@@ -319,11 +330,17 @@ function boot(root) {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
       const cleanPlate = new Image();
-      cleanPlate.src = new URL('./street-clean.webp?v=living-street-4', import.meta.url).href;
-      await cleanPlate.decode();
+      cleanPlate.src = new URL('./street-clean.webp?v=living-street-5', import.meta.url).href;
+      const pavementPlate = new Image();
+      pavementPlate.src = new URL('./street-pavement-clean.webp?v=living-street-5', import.meta.url).href;
+      await Promise.all([cleanPlate.decode(), pavementPlate.decode()]);
       if (state.disposed) return;
-      const { createLivingScene } = await import('./living-scene.js?v=living-street-4');
-      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate });
+      const { createLivingScene } = await import('./living-scene.js?v=living-street-5');
+      living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate, pavementPlate });
+      try {
+        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-5');
+        viewportMist = createViewportMist({ THREE, stage });
+      } catch { viewportMist = null; }
       catTarget = el('button', 'living-cat-target');
       catTarget.type = 'button';
       catTarget.setAttribute('aria-label', 'Say hello to the street cat');
@@ -359,6 +376,7 @@ function boot(root) {
     state.disposed = true; clearTimeout(state.timer); cancelAnimationFrame(state.frame);
     observer.disconnect(); listeners.forEach(off => off());
     living?.dispose();
+    viewportMist?.dispose();
     resources.forEach(resource => resource.dispose()); renderer?.dispose();
   }
   // Read-only diagnostics plus explicit controls for repeatable browser regression tests.
@@ -368,6 +386,7 @@ function boot(root) {
     nudgeLantern: id => { living?.react(id); schedule(); },
     greetCat: () => { living?.greet(); schedule(); },
     setCatSeed: seed => { living?.setCatSeed(seed); schedule(); },
+    setSurfaceVisible: value => { living?.setSurfaceVisible(Boolean(value)); schedule(); },
     snapshot: () => ({ renderer: state.renderer, reason: state.reason, mode: state.mode,
       motion: living?.snapshot() || null, view: state.view, camera: camera?.type || null,
       vertices: plane?.geometry.attributes.position.count || 0,

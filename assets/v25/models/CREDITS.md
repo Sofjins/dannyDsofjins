@@ -12,3 +12,5 @@ Changes: converted FBX to GLB with Three.js 0.184.0, embedded the source texture
 Recreate: `node scripts/convert-cat.mjs /path/to/Seren.fbx /path/to/CatTexture.png assets/v25/models/somali-cat.glb`.
 
 Attribution is also exposed through the landing's Art credits control. This license applies to the cat asset, not automatically to the rest of this repository.
+
+Living Street 5 runtime modifications: replacement short black fur albedo (`black-shorthair-fur.webp`, built-in imagegen edit of the original UV atlas), physical sheen, separate procedural iris shading, TailBase scaling (0.48, 0.72, 0.48), cast shadows and planar reflections. The GLB's original geometry and authored clips remain credited to DreamNoms; this is not a newly sourced photorealistic model. Generation specifications are recorded in `docs/scene-polish-prompts.md`.
