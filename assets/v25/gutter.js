@@ -28,29 +28,28 @@ export function dripState(seconds,index,emitter=DRIP_EMITTERS[0]) {
 export function createGutter({ THREE, parent }) {
   const root = new THREE.Group(); root.name = 'GutterAndBowl'; parent.add(root);
   const resources = [];
-  const reflectionPixels=new Uint8Array(128*64*4);
-  for(let row=0;row<64;row++)for(let column=0;column<128;column++){
-    const horizontal=column/128,vertical=row/64,offset=(row*128+column)*4;
-    const warm=Math.exp(-(((horizontal-.22)/.14)**2)-((vertical-.53)/.19)**2);
-    const cold=Math.exp(-(((horizontal-.72)/.12)**2)-((vertical-.39)/.23)**2);
-    const sky=Math.exp(-(((vertical-.27)/.055)**2))*.22;
-    reflectionPixels[offset]=Math.min(255,8+warm*204+cold*43+sky*105);
-    reflectionPixels[offset+1]=Math.min(255,12+warm*132+cold*132+sky*136);
-    reflectionPixels[offset+2]=Math.min(255,16+warm*69+cold*216+sky*160);
-    reflectionPixels[offset+3]=255;
+  const surfacePixels=new Uint8Array(64*64*4);
+  for(let row=0;row<64;row++)for(let column=0;column<64;column++){
+    const offset=(row*64+column)*4;
+    const noise=Math.sin(column*127.1+row*311.7)*43758.5453;
+    const grain=noise-Math.floor(noise);
+    const crust=Math.sin(column*.31+Math.sin(row*.43))*Math.sin(row*.27+column*.17);
+    const height=Math.round(114+crust*37+grain*43);
+    surfacePixels[offset]=surfacePixels[offset+1]=surfacePixels[offset+2]=height;
+    surfacePixels[offset+3]=255;
   }
-  const metalEnvironment=new THREE.DataTexture(reflectionPixels,128,64);
-  metalEnvironment.colorSpace=THREE.SRGBColorSpace;metalEnvironment.mapping=THREE.EquirectangularReflectionMapping;
-  metalEnvironment.minFilter=metalEnvironment.magFilter=THREE.LinearFilter;metalEnvironment.needsUpdate=true;
-  resources.push(metalEnvironment);
+  const crustTexture=new THREE.DataTexture(surfacePixels,64,64);
+  crustTexture.wrapS=crustTexture.wrapT=THREE.RepeatWrapping;crustTexture.repeat.set(2.4,1.3);
+  crustTexture.minFilter=crustTexture.magFilter=THREE.LinearFilter;crustTexture.needsUpdate=true;
+  resources.push(crustTexture);
   const world = (horizontal, vertical, depth = 18) => new THREE.Vector3(horizontal, 1024 - vertical, depth);
   const addMesh = (name, geometry, material, position) => {
     const mesh = new THREE.Mesh(geometry, material); mesh.name = name; mesh.renderOrder = 3;
     if (position) mesh.position.copy(position);
     root.add(mesh); resources.push(geometry); return mesh;
   };
-  const pipeMaterial = new THREE.MeshPhysicalMaterial({ color: 0x414a43, roughness: .40, metalness: .77,
-    clearcoat:.22,clearcoatRoughness:.28,envMap:metalEnvironment,envMapIntensity:.58,side: THREE.DoubleSide });
+  const pipeMaterial = new THREE.MeshPhysicalMaterial({ color: 0x191d1a, roughness: .97, metalness: 0,
+    clearcoat:0,specularIntensity:.06,bumpMap:crustTexture,bumpScale:.18,side: THREE.DoubleSide });
   pipeMaterial.onBeforeCompile = shader => {
     shader.vertexShader = 'varying vec3 metalPosition;\n' + shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nmetalPosition = position;');
@@ -59,12 +58,15 @@ export function createGutter({ THREE, parent }) {
       #include <color_fragment>
       float grain = fract(sin(dot(metalPosition, vec3(43.13,71.71,39.41))) * 43758.5453);
       float patina = sin(metalPosition.x * .48 + sin(metalPosition.y * .69)) * sin(metalPosition.z * .61 + metalPosition.y * .31);
-      diffuseColor.rgb *= .94 + grain * .09;
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.081,.044,.026), smoothstep(.40,.85,patina) * .42);
+      diffuseColor.rgb *= .52 + grain * .18;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.015,.009,.005), smoothstep(.34,.83,patina) * .52);
     `);
   };
-  const seamMaterial = new THREE.MeshStandardMaterial({ color: 0x5c6861, roughness: .32, metalness: .82,envMap:metalEnvironment,envMapIntensity:.66 });
-  const mountMaterial = new THREE.MeshStandardMaterial({ color: 0x303a3c, roughness: .6, metalness: .55,envMap:metalEnvironment,envMapIntensity:.35 });
+  const seamMaterial = new THREE.MeshPhysicalMaterial({ color: 0x1b201c, roughness: .96, metalness: 0,
+    specularIntensity:.06,bumpMap:crustTexture,bumpScale:.14 });
+  const mountMaterial = new THREE.MeshPhysicalMaterial({ color: 0x151a18, roughness: 1, metalness: 0,
+    specularIntensity:.04,bumpMap:crustTexture,bumpScale:.16 });
+  seamMaterial.onBeforeCompile=mountMaterial.onBeforeCompile=pipeMaterial.onBeforeCompile;
   const shadowMaterial = new THREE.MeshBasicMaterial({ color: 0x070b0d, transparent: true, opacity: .34, depthWrite: false });
   const boreMaterial = new THREE.MeshStandardMaterial({ color: 0x121c1c, roughness: .9, side: THREE.DoubleSide });
   resources.push(pipeMaterial, seamMaterial, mountMaterial, shadowMaterial, boreMaterial);
@@ -138,6 +140,7 @@ export function createGutter({ THREE, parent }) {
     snapshot: () => ({ dropsPerCycle: DRIP_STARTS.length, cycle: DRIP_CYCLE,
       emitters:DRIP_EMITTERS.map(emitter=>({id:emitter.id,source:emitter.source,target:emitter.target,cycle:emitter.cycle})),
       attachment:'eave-gutter-and-bolted-wall-bracket',
+      finish:'dark-matte-crusted',
       active: drops.filter(drop => drop.mesh.visible).length, clock, source: DRIP_SOURCE, bowl: BOWL }),
     dispose() { parent.remove(root); resources.forEach(resource => resource.dispose()); }
   };

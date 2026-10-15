@@ -10,6 +10,7 @@ try {
   report.status = response.status();
   await page.waitForFunction(() => window.__gatewayTest?.version === 'living-street-9' && window.__gatewayTest.snapshot().renderer === 'webgl', null, { timeout: 45000 });
   await page.waitForFunction(()=>window.__gatewayTest.snapshot().motion?.cat.model==='authored-gltf',null,{timeout:45000});
+  await page.waitForFunction(()=>window.__gatewayTest.snapshot().motion?.gutter.finish==='dark-matte-crusted',null,{timeout:45000});
   const snapshot = await page.evaluate(() => window.__gatewayTest.snapshot());
   report.version = await page.evaluate(() => window.__gatewayTest.version);
   report.renderer = snapshot.renderer;

@@ -188,6 +188,14 @@ test('drain spout connects to the roof collector and wall hardware, with an alig
   const parent=new THREE.Group();
   const gutter=createGutter({THREE,parent});
   const root=parent.getObjectByName('GutterAndBowl');
+  for(const name of ['WeatheredDrainSpout','SpoutJointCollar','SpoutWallAnchor']){
+    const material=root.getObjectByName(name).material;
+    assert.equal(material.metalness,0);
+    assert.equal(material.clearcoat,0);
+    assert.equal(material.envMap,null);
+    assert.ok(material.roughness>=.95&&material.specularIntensity<=.06);
+    assert.ok(material.bumpMap?.isDataTexture&&material.bumpScale>0);
+  }
   for(const name of ['EaveCollectionGutter','RoofDrainCollector','SpoutWallAnchor','SpoutAnchorStandoff','WallAnchorBolt','SpoutInnerBore'])assert.ok(root.getObjectByName(name));
   const geometry=root.getObjectByName('WeatheredDrainSpout').geometry;
   const outlet=geometry.parameters.path.getPoint(1);
