@@ -123,7 +123,8 @@ try:
             live_b = np.asarray(Image.open(io.BytesIO(page.locator('.reference-art').screenshot())).convert('RGB')).astype('int16')
             temporal = np.abs(live_a-live_b)
             check('live_light_changes_pixels',bool(temporal.max()>0))
-            check('unlit_architecture_keeps_original_colour',float(np.abs(live_a-actual)[105:190,240:510].mean())<.15)
+            architecture_error=float(np.abs(live_a-actual)[105:190,240:510].mean())
+            check('unlit_architecture_keeps_original_colour',architecture_error<.15,architecture_error)
             # Immutable architecture region: roofline and wood sign stay pixel-stable.
             check('architecture_not_animated',int(temporal[105:190,240:510].max())==0)
             page.locator('.gateway-door--magic').hover();page.wait_for_timeout(300)

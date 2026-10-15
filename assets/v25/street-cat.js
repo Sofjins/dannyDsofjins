@@ -91,9 +91,10 @@ export function createStreetCat({ THREE, parent }) {
   }
   const shadowCanvas = Object.assign(document.createElement('canvas'), { width: 128, height: 64 });
   const shadowContext = shadowCanvas.getContext('2d');
-  const gradient = shadowContext.createRadialGradient(64, 32, 0, 64, 32, 60);
+  shadowContext.scale(1, .5);
+  const gradient = shadowContext.createRadialGradient(64, 64, 0, 64, 64, 60);
   gradient.addColorStop(0, 'rgba(0,0,0,.75)'); gradient.addColorStop(.45, 'rgba(0,0,0,.4)'); gradient.addColorStop(1, 'rgba(0,0,0,0)');
-  shadowContext.fillStyle = gradient; shadowContext.fillRect(0, 0, 128, 64);
+  shadowContext.fillStyle = gradient; shadowContext.fillRect(0, 0, 128, 128);
   const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
   const shadowMaterial = new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, toneMapped: false });
   const shadowGeometry = new THREE.PlaneGeometry(138, 28);

@@ -11,6 +11,30 @@ export function createLivingScene({THREE,scene,image,material,originalTexture,cl
     t.generateMipmaps=false;t.minFilter=t.magFilter=THREE.LinearFilter;resources.push(t);return t;
   };
   const cleanTexture=tx(prepared.clean);
+  const cleanActive={value:0};
+  const compileOriginal=material.onBeforeCompile;
+  const patchRects=[...prepared.lanterns,...prepared.flames,...prepared.foliage].map(spec=>spec.rect);
+  if(prepared.catRemoved)patchRects.push([628,678,188,114]);
+  material.onBeforeCompile=shader=>{
+    compileOriginal(shader);
+    shader.uniforms.uCleanMap={value:cleanTexture};
+    shader.uniforms.uCleanActive=cleanActive;
+    shader.fragmentShader=`
+      uniform sampler2D uCleanMap;
+      uniform float uCleanActive;
+      float cleanRegion(vec2 point,vec4 bounds){
+        return step(bounds.x,point.x)*step(bounds.y,point.y)
+          *(1.0-step(bounds.x+bounds.z,point.x))*(1.0-step(bounds.y+bounds.w,point.y));
+      }
+    `+shader.fragmentShader;
+    const regions=patchRects.map(rect=>`cleanRegion(cleanPoint,vec4(${rect.map(value=>Number(value).toFixed(1)).join(',')}))`).join('+');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`
+      #include <map_fragment>
+      vec2 cleanPoint=vec2(vMapUv.x*1536.0,(1.0-vMapUv.y)*1024.0);
+      float cleanMask=clamp(${regions},0.0,1.0)*uCleanActive;
+      if(cleanMask>.5)diffuseColor=texture2D(uCleanMap,vMapUv);
+    `);
+  };
   function makeProp(spec,z){
     const [x,y,w,h]=spec.rect,[px,py]=spec.pivot;
     const pivot=new THREE.Group();pivot.position.set(px,H-py,z);root.add(pivot);
@@ -50,7 +74,7 @@ export function createLivingScene({THREE,scene,image,material,originalTexture,cl
   }
   function enable(value){
     enabled=Boolean(value);root.visible=enabled;
-    material.map=enabled?cleanTexture:originalTexture;
+    cleanActive.value=enabled?1:0;
     if(!enabled){for(const p of lanterns)p.pivot.rotation.z=0;}
   }
   function update(t){

@@ -115,6 +115,7 @@ function boot(root) {
     for (const b of lighting.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
     uniforms.uLive.value = state.mode === 'live' ? 1 : 0;
     living?.enable(state.mode === 'live');
+    if (catTarget && state.mode !== 'live') catTarget.hidden = true;
     state.last = 0;
     if (state.mode === 'reference') {
       state.magic = state.software = 0;
