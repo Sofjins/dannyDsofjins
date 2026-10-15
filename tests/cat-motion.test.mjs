@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { catPose, createCatBehavior, CAT_GROUND, CAT_BOX_TOP } from '../assets/v25/cat-motion.js';
 import { neonLevels } from '../assets/v25/neon.js';
 import { environmentTransform } from '../assets/v25/environment.js';
-import { DRIP_EMITTERS, dripState, DRIP_CYCLE, DRIP_STARTS, FALL_TIME, BOWL } from '../assets/v25/gutter.js';
+import { createGutter, DRIP_EMITTERS, dripState, DRIP_CYCLE, DRIP_STARTS, DRIP_SOURCE, FALL_TIME, BOWL } from '../assets/v25/gutter.js';
 import { streetFraming } from '../assets/v25/framing.js';
 import { createWetStreet, STREET_SURFACE } from '../assets/v25/wet-street.js';
 
@@ -169,14 +169,38 @@ test('four faulty neon circuits have different timings while other tubes only br
     for(const index of [0,2,4,6])assert.ok(levels[index]>.85);
   }
 });
-test('five drip origins have staggered sparse bursts and their own impact positions',()=>{
-  assert.equal(DRIP_EMITTERS.length,5);
-  assert.equal(new Set(DRIP_EMITTERS.map(emitter=>emitter.cycle)).size,5);
+test('seven drip origins have staggered sparse bursts and their own impact positions',()=>{
+  assert.equal(DRIP_EMITTERS.length,7);
+  assert.equal(new Set(DRIP_EMITTERS.map(emitter=>emitter.cycle)).size,7);
+  const dropsPerMinute=DRIP_EMITTERS.reduce((total,emitter)=>total+emitter.starts.length*60/emitter.cycle,0);
+  assert.ok(dropsPerMinute>65&&dropsPerMinute<90);
   for(const emitter of DRIP_EMITTERS)for(const [index,start] of emitter.starts.entries()){
+    assert.ok(start+2<emitter.cycle);
+    assert.ok(emitter.source.y<emitter.target.y);
     assert.equal(dripState(start-.01,index,emitter).falling,false);
     assert.equal(dripState(start+.01,index,emitter).falling,true);
     assert.equal(dripState(start+2,index,emitter).y,emitter.target.y);
   }
+});
+test('drain spout connects to the roof collector and wall hardware, with an aligned open outlet',async()=>{
+  const THREE=await import('three');
+  const parent=new THREE.Group();
+  const gutter=createGutter({THREE,parent});
+  const root=parent.getObjectByName('GutterAndBowl');
+  for(const name of ['EaveCollectionGutter','RoofDrainCollector','SpoutWallAnchor','SpoutAnchorStandoff','WallAnchorBolt','SpoutInnerBore'])assert.ok(root.getObjectByName(name));
+  const geometry=root.getObjectByName('WeatheredDrainSpout').geometry;
+  const outlet=geometry.parameters.path.getPoint(1);
+  assert.ok(Math.abs(outlet.x-DRIP_SOURCE.x)<1e-9);
+  assert.ok(Math.abs(outlet.y-(1024-DRIP_SOURCE.y))<1e-9);
+  assert.equal(geometry.parameters.closed,false);
+  assert.equal(BOWL.x,DRIP_SOURCE.x);
+  gutter.update(DRIP_STARTS[0]+.1);
+  assert.ok(gutter.snapshot().active>0);
+  let disposed=0;
+  geometry.addEventListener('dispose',()=>disposed++);
+  gutter.dispose();
+  assert.equal(disposed,1);
+  assert.equal(parent.children.length,0);
 });
 test('floor texture registration exactly matches the surrounding CSS image',()=>{
   for(const horizontal of [true,false]){

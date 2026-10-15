@@ -16,7 +16,7 @@ body[data-world="gateway"] .status-dot{width:5px;height:5px;box-shadow:none}
 .reference-surround[data-axis="portrait"]{background-image:url('./street-environment-portrait.webp')}
 .viewport-mist{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
 .viewport-mist[hidden]{display:none}
-.gateway-experience[data-mode="live"] .reference-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:linear-gradient(90deg,#01050b78,transparent 31%,transparent 69%,#01050b8c),radial-gradient(ellipse var(--focus-width,68vw) var(--focus-height,72svh) at 50% 54%,transparent 38%,#02070c55 80%,#02070cb0 125%)}
+.gateway-experience[data-mode="live"] .reference-stage:not([data-atmosphere="composited"])::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:linear-gradient(90deg,#01050b78,transparent 31%,transparent 69%,#01050b8c),radial-gradient(ellipse var(--focus-width,68vw) var(--focus-height,72svh) at 50% 54%,transparent 38%,#02070c55 80%,#02070cb0 125%)}
 .reference-art{position:absolute;left:50%;top:50%;width:min(100vw,150svh);aspect-ratio:3/2;transform:translate(-50%,-50%);transform-origin:50% 50%;isolation:isolate;user-select:none;-webkit-user-select:none;transition:transform .76s cubic-bezier(.22,.65,.28,1)}
 .gateway-still,#gateway-webgl,.gateway-hotspots{position:absolute;inset:0;width:100%;height:100%;max-width:none;margin:0;transform:none;display:block}
 .gateway-still{object-fit:contain;z-index:0;pointer-events:none;user-select:none;opacity:1}

@@ -64,10 +64,10 @@ def load(page, *, block_gl=False):
         page.add_script_tag(content=(ROOT/'assets/site.js').read_text())
         module=(ROOT/'assets/v25/main.js').read_text()
         framing=(ROOT/'assets/v25/framing.js').read_text().replace('export function','function')
-        module=module.replace("import { streetFraming } from './framing.js?v=living-street-8';",framing)
+        module=module.replace("import { streetFraming } from './framing.js?v=living-street-9';",framing)
         water=(ROOT/'assets/v25/water-light.js').read_text().replace('export const','const')
-        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-8';",water)
-        for name,statement in [('neon',"import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-8';"),('environment',"import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-8';"),('prepared-assets',"import { loadPreparedAssets } from './prepared-assets.js';")]:
+        module=module.replace("import { waterLightShader } from './water-light.js?v=living-street-9';",water)
+        for name,statement in [('neon',"import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-9';"),('environment',"import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-9';"),('prepared-assets',"import { loadPreparedAssets } from './prepared-assets.js';")]:
             module=module.replace(statement,(ROOT/f'assets/v25/{name}.js').read_text().replace('export ',''))
         page.add_script_tag(type='module', content=module)
     else:

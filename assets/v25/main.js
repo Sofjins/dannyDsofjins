@@ -3,17 +3,17 @@
  * This module enhances the existing static application; no server/build change required.
  */
 import { loadPreparedAssets } from './prepared-assets.js';
-import { streetFraming } from './framing.js?v=living-street-8';
-import { waterLightShader } from './water-light.js?v=living-street-8';
-import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-8';
-import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-8';
+import { streetFraming } from './framing.js?v=living-street-9';
+import { waterLightShader } from './water-light.js?v=living-street-9';
+import { neonLevels, neonFunctions, neonShader } from './neon.js?v=living-street-9';
+import { environmentFunctions, environmentTransform } from './environment.js?v=living-street-9';
 
 const root = document.getElementById('gateway-experience');
 if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-8';
+  const VERSION = 'living-street-9';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -249,7 +249,7 @@ function boot(root) {
     const neon=neonLevels(clock);uniforms.uNeonA.value=neon.slice(0,4);uniforms.uNeonB.value=neon.slice(4);
     uniforms.uMagic.value = state.magic; uniforms.uSoftware.value = state.software;
     renderer.render(scene, camera);
-    viewportMist?.update(clock, testTime !== null);
+    viewportMist?.update(clock, testTime !== null, living?.lightState());
     if (live && testTime === null || Math.abs(state.magic - targetMagic) + Math.abs(state.software - targetSoftware) > .001) schedule();
   }
   function raycastAt(clientX, clientY) {
@@ -283,7 +283,7 @@ function boot(root) {
       if (!gl) { fallback('webgl-unavailable'); return; }
       const preparedTask=baking?null:loadPreparedAssets();
       if(baking)still.src=new URL('./street-master.webp',import.meta.url).href;
-      THREE=await import('./three-vendor.js?v=living-street-8');
+      THREE=await import('./three-vendor.js?v=living-street-9');
       const [preparedAssets]=await Promise.all([preparedTask,selectEnvironment(stage.clientWidth/stage.clientHeight>=1.5),baking?still.decode():Promise.resolve()]);
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
@@ -363,12 +363,12 @@ function boot(root) {
         }));
       }
       if(state.disposed)return;
-      const {createLivingScene}=await import('./living-scene.js?v=living-street-8');
+      const {createLivingScene}=await import('./living-scene.js?v=living-street-9');
       living=await createLivingScene({THREE,scene,image:still,material,originalTexture:texture,preparedAssets,...sourceAssets});
       living.setPortrait(environmentAxis==='portrait');
       try {
-        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-8');
-        viewportMist = createViewportMist({ THREE, stage });
+        const { createViewportMist } = await import('./viewport-mist.js?v=living-street-9');
+        viewportMist = createViewportMist({ THREE, stage, prepared:living.prepared });
         living.setViewportMist(true);
       } catch { viewportMist = null; }
       catTarget = el('button', 'living-cat-target');
@@ -430,7 +430,10 @@ function boot(root) {
     greetCat: () => { living?.greet(); schedule(); },
     setCatSeed: seed => { living?.setCatSeed(seed); schedule(); },
     setSurfaceVisible: value => { living?.setSurfaceVisible(Boolean(value)); schedule(); },
+    setSteamEnabled: value => { viewportMist?.setSteamEnabled(Boolean(value)); schedule(); },
+    setShadeEnabled: value => { viewportMist?.setShadeEnabled(Boolean(value)); schedule(); },
     snapshot: () => ({ timing:{...timing}, renderer: state.renderer, reason: state.reason, mode: state.mode,
+      viewportMist:viewportMist?.snapshot()||null,
       motion: living?.snapshot() || null, view: state.view, camera: camera?.type || null,
       vertices: plane?.geometry.attributes.position.count || 0,
       maxDepth: plane ? Math.max(...Array.from(plane.geometry.attributes.position.array).filter((_,i)=>i%3===2)) : null,

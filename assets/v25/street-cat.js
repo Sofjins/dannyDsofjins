@@ -1,4 +1,4 @@
-import { createCatActor } from './cat-actor.js?v=living-street-8';
+import { createCatActor } from './cat-actor.js?v=living-street-9';
 
 export async function createStreetCat({ THREE, parent }) {
   const loader=new THREE.GLTFLoader();

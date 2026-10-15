@@ -43,7 +43,10 @@ try {
   verify('plants use leaf-only alpha sprites, not rectangular wall cutouts', initial.motion.foliage.isolatedAlpha && initial.motion.foliage.alphaOccupancy.every(([name, occupancy]) => occupancy > .03 && occupancy < .85), initial.motion.foliage.alphaOccupancy);
   verify('three independently anchored curtain panels', initial.motion.curtains.count === 3 && initial.motion.curtains.topAnchored && initial.motion.curtains.isolatedAlpha);
   verify('mist has five depth layers and no rainfall', initial.motion.atmosphere.layers === 5 && initial.motion.atmosphere.viewport && initial.motion.rainCount === 0);
-  verify('gutter drips sparingly into the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6 && initial.motion.gutter.emitters.length === 5);
+  verify('seven sparse drip origins, including the bowl', initial.motion.gutter.dropsPerCycle === 3 && initial.motion.gutter.cycle > 6 && initial.motion.gutter.emitters.length === 7);
+  verify('gutter is attached to both the eave and wall',initial.motion.gutter.attachment==='eave-gutter-and-bolted-wall-bracket');
+  verify('steam originates at the street drain',initial.viewportMist?.steam&&initial.viewportMist.drain.x===912&&initial.viewportMist.drain.y===842);
+  verify('fog and darkness preserve actual light shapes',initial.viewportMist.lightProtection==='emissive-pixels'&&initial.viewportMist.scattering);
   verify('cat has its own planar reflection and cast shadows', initial.motion.pavement.reflection === 'planar-skinned-mesh' && initial.motion.pavement.shadows === 'pcf-cast-and-contact');
   verify('short black coat and reduced tail', initial.motion.cat.coat === 'black-short-fur' && initial.motion.cat.tailScale[0] < .6);
   verify('mist reaches the viewport, not only the source artwork', await page.locator('.viewport-mist').count() === 1);
@@ -76,6 +79,31 @@ try {
   verify('foliage pixels move', difference(early, later, [554, 448, 160, 150]).maximum > 3);
   verify('mist pixels evolve', difference(early, later, [250, 800, 300, 150]).maximum > 0);
   verify('curtain pixels move', difference(early, later, [290, 315, 310, 145]).maximum > 4);
+  const steaming=await frame(8);
+  if(process.env.GATEWAY_PREVIEW_LOG==='1') {
+    console.log(`DRAIN_PREVIEW_BASE64=${(await page.screenshot({type:'jpeg',quality:90,clip:{x:805,y:660,width:300,height:230}})).toString('base64')}`);
+    console.log(`GUTTER_PREVIEW_BASE64=${(await page.screenshot({type:'jpeg',quality:95,clip:{x:644,y:163,width:187,height:111}})).toString('base64')}`);
+  }
+  await page.evaluate(()=>window.__gatewayTest.setSteamEnabled(false));
+  const withoutSteam=await frame(8);
+  const steamDelta=difference(steaming,withoutSteam,[855,710,140,132]);
+  verify('drain emits visible steam without moving the grate',steamDelta.maximum>3&&steamDelta.mean>.1,steamDelta);
+  verify('steam does not leak under the pavement',difference(steaming,withoutSteam,[800,850,300,65]).maximum===0);
+  await page.evaluate(()=>window.__gatewayTest.setSteamEnabled(true));
+  const shaded=await frame(2);
+  await page.evaluate(()=>window.__gatewayTest.setShadeEnabled(false));
+  const unshaded=await frame(2);
+  for(const [name,rectangle,channel] of [['left lantern',[140,270,45,70],0],['Japanese neon',[1344,348,31,103],2]]){
+    const [left,top,width,height]=rectangle;
+    let total=0,count=0;
+    for(let row=top;row<top+height;row++)for(let column=left;column<left+width;column++){
+      const offset=(row*shaded.width+column)*4+channel;
+      if(unshaded.data[offset]>180){total+=Math.abs(shaded.data[offset]-unshaded.data[offset]);count++;}
+    }
+    verify(`${name} stays luminous under the side vignette`,count>15&&total/count<8,{pixels:count,mean:total/Math.max(1,count)});
+  }
+  verify('surrounding masonry still receives the vignette',difference(shaded,unshaded,[10,350,70,130]).mean>1);
+  await page.evaluate(()=>window.__gatewayTest.setShadeEnabled(true));
   const reflected = await frame(90);
   if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`SURFACE_PREVIEW_BASE64=${(await art.screenshot({ type: 'jpeg', quality: 80 })).toString('base64')}`);
   const catAt90 = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat);

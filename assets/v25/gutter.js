@@ -1,13 +1,15 @@
-export const DRIP_CYCLE = 7.4;
+export const DRIP_CYCLE = 6.8;
 export const DRIP_STARTS = [.8, 1.16, 1.72];
-export const DRIP_SOURCE = { x: 790, y: 226 };
+export const DRIP_SOURCE = { x: 790, y: 239 };
 export const BOWL = { x: 790, y: 754 };
 export const DRIP_EMITTERS = [
   {id:'bowl',source:DRIP_SOURCE,target:BOWL,starts:DRIP_STARTS,cycle:DRIP_CYCLE},
-  {id:'left-eave',source:{x:211,y:219},target:{x:211,y:778},starts:[2.3,2.75],cycle:13.1},
-  {id:'magic-eave',source:{x:598,y:221},target:{x:598,y:773},starts:[5.1],cycle:10.7},
-  {id:'hub-pipe',source:{x:1094,y:327},target:{x:1094,y:779},starts:[3.7,4.18],cycle:16.4},
-  {id:'right-cable',source:{x:1484,y:303},target:{x:1484,y:810},starts:[8.2],cycle:19.3}
+  {id:'left-eave',source:{x:211,y:219},target:{x:211,y:778},starts:[2.3,2.75,3.36],cycle:12.7},
+  {id:'magic-eave',source:{x:598,y:221},target:{x:598,y:773},starts:[5.1,5.76],cycle:10.3},
+  {id:'hub-pipe',source:{x:1094,y:327},target:{x:1094,y:779},starts:[3.7,4.18],cycle:15.9},
+  {id:'right-cable',source:{x:1484,y:303},target:{x:1484,y:810},starts:[8.2,8.89],cycle:18.7},
+  {id:'left-roof-joint',source:{x:80,y:191},target:{x:80,y:795},starts:[1.6,2.21],cycle:14.3},
+  {id:'window-lintel',source:{x:1268,y:344},target:{x:1268,y:786},starts:[6.3,6.79],cycle:17.1}
 ];
 const gravity = 1580;
 export const FALL_TIME = Math.sqrt(2 * (BOWL.y - DRIP_SOURCE.y) / gravity);
@@ -26,33 +28,64 @@ export function dripState(seconds,index,emitter=DRIP_EMITTERS[0]) {
 export function createGutter({ THREE, parent }) {
   const root = new THREE.Group(); root.name = 'GutterAndBowl'; parent.add(root);
   const resources = [];
-  const pipePath = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(728, 827, 10), new THREE.Vector3(754, 826, 10),
-    new THREE.Vector3(775, 823, 10), new THREE.Vector3(786, 815, 12),
-    new THREE.Vector3(790, 798, 15)
-  ]);
-  const pipeGeometry = new THREE.TubeGeometry(pipePath, 48, 4.4, 20, false);
-  const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x393b34, roughness: .65, metalness: .68, side: THREE.DoubleSide });
+  const world = (horizontal, vertical, depth = 18) => new THREE.Vector3(horizontal, 1024 - vertical, depth);
+  const addMesh = (name, geometry, material, position) => {
+    const mesh = new THREE.Mesh(geometry, material); mesh.name = name; mesh.renderOrder = 3;
+    if (position) mesh.position.copy(position);
+    root.add(mesh); resources.push(geometry); return mesh;
+  };
+  const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x536166, roughness: .43, metalness: .42, side: THREE.DoubleSide });
   pipeMaterial.onBeforeCompile = shader => {
+    shader.vertexShader = 'varying vec3 metalPosition;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nmetalPosition = position;');
+    shader.fragmentShader = 'varying vec3 metalPosition;\n' + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
       #include <color_fragment>
-      float oxidation = fract(sin(dot(floor(vViewPosition * 1.3), vec3(12.9898,78.233,44.137))) * 43758.5453);
-      diffuseColor.rgb *= .72 + oxidation * .45;
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.035,.052,.043), smoothstep(.82,.98,oxidation) * .32);
+      float grain = fract(sin(dot(metalPosition, vec3(43.13,71.71,39.41))) * 43758.5453);
+      float patina = sin(metalPosition.x * .48 + sin(metalPosition.y * .69)) * sin(metalPosition.z * .61 + metalPosition.y * .31);
+      diffuseColor.rgb *= .88 + grain * .19;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.081,.044,.026), smoothstep(.48,.92,patina) * .32);
     `);
   };
-  const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial); pipe.renderOrder = 2; root.add(pipe);
-  resources.push(pipeGeometry, pipeMaterial);
-  const boreGeometry = new THREE.TubeGeometry(pipePath, 48, 3.4, 20, false);
+  const seamMaterial = new THREE.MeshStandardMaterial({ color: 0x697372, roughness: .35, metalness: .52 });
+  const mountMaterial = new THREE.MeshStandardMaterial({ color: 0x303a3c, roughness: .6, metalness: .38 });
+  const shadowMaterial = new THREE.MeshBasicMaterial({ color: 0x070b0d, transparent: true, opacity: .34, depthWrite: false });
   const boreMaterial = new THREE.MeshStandardMaterial({ color: 0x121c1c, roughness: .9, side: THREE.DoubleSide });
-  const bore = new THREE.Mesh(boreGeometry, boreMaterial); bore.renderOrder = 2; root.add(bore);
-  resources.push(boreGeometry, boreMaterial);
-  for (const progress of [.10, .53, 1]) {
-    const geometry = new THREE.TorusGeometry(progress === 1 ? 3.9 : 4.5, progress === 1 ? .52 : .68, 8, 24);
-    const collar = new THREE.Mesh(geometry, pipeMaterial);
+  resources.push(pipeMaterial, seamMaterial, mountMaterial, shadowMaterial, boreMaterial);
+  const trough = addMesh('EaveCollectionGutter', new THREE.CylinderGeometry(4.8, 4.8, 78, 32, 1, true, Math.PI, Math.PI), pipeMaterial, world(697, 187, 13));
+  trough.rotation.z = Math.PI / 2;
+  const gutterLip = addMesh('GutterRolledLip', new THREE.CylinderGeometry(.62, .62, 80, 10), seamMaterial, world(697, 186.5, 17.8));
+  gutterLip.rotation.z = Math.PI / 2;
+  const collector = addMesh('RoofDrainCollector', new THREE.CylinderGeometry(8.2, 4.2, 16, 32, 1, true), pipeMaterial, world(731, 195, 16));
+  collector.rotation.z = -.12;
+  const collectorRim = addMesh('CollectorRolledRim', new THREE.TorusGeometry(8.1, .72, 10, 32), seamMaterial, world(730, 187, 16));
+  collectorRim.rotation.x = Math.PI / 2;
+  const pipePath = new THREE.CatmullRomCurve3([
+    world(732, 202, 16), world(741, 209, 18), world(768, 211, 23),
+    world(783, 218, 29), world(790, 231, 34), world(DRIP_SOURCE.x, DRIP_SOURCE.y, 36)
+  ]);
+  addMesh('WeatheredDrainSpout', new THREE.TubeGeometry(pipePath, 72, 4.2, 32, false), pipeMaterial);
+  addMesh('SpoutInnerBore', new THREE.TubeGeometry(pipePath, 72, 3.35, 32, false), boreMaterial);
+  const shadowGeometry = new THREE.TubeGeometry(pipePath, 48, 5, 16, false);
+  const shadowPositions = shadowGeometry.attributes.position;
+  for (let index=0;index<shadowPositions.count;index++) shadowPositions.setZ(index,.5);
+  const shadow = addMesh('SpoutWallShadow', shadowGeometry, shadowMaterial);
+  shadow.position.set(2,-2,0); shadow.renderOrder = 2;
+  for (const progress of [.14, .66, 1]) {
+    const collar = addMesh('SpoutJointCollar', new THREE.TorusGeometry(progress === 1 ? 3.77 : 4.36, progress === 1 ? .47 : .65, 12, 32), seamMaterial);
     collar.position.copy(pipePath.getPointAt(progress));
     collar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), pipePath.getTangentAt(progress));
-    collar.renderOrder = 3; root.add(collar); resources.push(geometry);
+  }
+  for (const horizontal of [677, 715]) {
+    addMesh('EaveGutterBracket', new THREE.BoxGeometry(2.1, 12, 5), mountMaterial, world(horizontal, 190, 11));
+    const bolt = addMesh('EaveBracketBolt', new THREE.CylinderGeometry(.95, .95, 1, 6), seamMaterial, world(horizontal, 194, 14));
+    bolt.rotation.x = Math.PI / 2;
+  }
+  addMesh('SpoutWallAnchor', new THREE.BoxGeometry(9, 15, 1.5), mountMaterial, world(744, 208, 3));
+  addMesh('SpoutAnchorStandoff', new THREE.BoxGeometry(2.6, 3, 17), mountMaterial, world(744, 209, 12));
+  for (const vertical of [202.5, 213.5]) {
+    const bolt = addMesh('WallAnchorBolt', new THREE.CylinderGeometry(1.15, 1.15, 1.2, 6), seamMaterial, world(744, vertical, 4.5));
+    bolt.rotation.x = Math.PI / 2;
   }
   const drops = DRIP_EMITTERS.flatMap(emitter=>emitter.starts.map((_,index)=>{
     const geometry = new THREE.SphereGeometry(.8, 12, 12);
@@ -88,6 +121,7 @@ export function createGutter({ THREE, parent }) {
     },
     snapshot: () => ({ dropsPerCycle: DRIP_STARTS.length, cycle: DRIP_CYCLE,
       emitters:DRIP_EMITTERS.map(emitter=>({id:emitter.id,source:emitter.source,target:emitter.target,cycle:emitter.cycle})),
+      attachment:'eave-gutter-and-bolted-wall-bracket',
       active: drops.filter(drop => drop.mesh.visible).length, clock, source: DRIP_SOURCE, bowl: BOWL }),
     dispose() { parent.remove(root); resources.forEach(resource => resource.dispose()); }
   };
