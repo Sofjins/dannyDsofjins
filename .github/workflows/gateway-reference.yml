@@ -1,0 +1,40 @@
+name: Gateway reference checks
+on:
+  push:
+    branches: [main, fix/reference-gateway-20261015]
+    paths:
+      - 'assets/v25/**'
+      - 'assets/site.*'
+      - 'index.html'
+      - 'tests/gateway_reference.py'
+      - '.github/workflows/gateway-reference.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned test dependencies (not production dependencies)
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts three@0.179.1
+          python -m pip install playwright==1.55.0 pillow==11.3.0 numpy==2.3.3
+          python -m playwright install --with-deps chromium
+      - name: Syntax and real WebGL reference verification
+        run: |
+          node --check assets/v25/main.js
+          python tests/gateway_reference.py --require-webgl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gateway-reference-proof
+          path: test-results/
+          retention-days: 7

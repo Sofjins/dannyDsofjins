@@ -1,222 +1,313 @@
-/**
- * Danny Sofjins — Gallery-quality 2.5D Gateway.
- * A continuous Three.js relief mesh samples an artist-approved composition + depth map.
- * Precisely registered emissive masks animate candle/neon light without changing
- * the high-quality architectural artwork. No cheap procedural animal/lantern meshes.
+/** Reference-locked gateway. Architecture is a rigid four-vertex plane, never displaced.
+ * Scene coordinates are the approved artwork's pixels (1536 x 1024).
+ * This module enhances the existing static application; no server/build change required.
  */
 const root = document.getElementById('gateway-experience');
-const canvas = document.getElementById('gateway-webgl');
-const still = document.getElementById('gateway-still');
-const hotspots = document.getElementById('gateway-hotspots');
-const tip = document.getElementById('gateway-instruction');
-const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-const mobile = window.matchMedia('(max-width: 760px)');
-const interactive = [...root.querySelectorAll('[data-gateway-door]')];
-const artWidth = 1536, artHeight = 1024, sceneWidth = 15, sceneHeight = 10;
-const artAspect = artWidth / artHeight;
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const time = () => performance.now();
+if (root) boot(root);
 
-const state = { pan: 0, panGoal: 0, mx: 0, my: 0, focused: null, opening: null, entered: false,
-  enteringStart: 0, last: 0, canRender: true, nextFlicker: 0, flickerEnd: 0, touched: false };
-let THREE, renderer, camera, scene, world, baseScale = 1, plane, glowMeshes = {}, rain;
-let running = false, resizeObserver;
+function boot(root) {
+  const W = 1536, H = 1024;
+  const VERSION = 'reference-repair-1';
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const mobile = matchMedia('(max-width: 760px)');
+  // Measured inside the actual openings, excluding lanterns, curtain and masonry.
+  const doors = Object.freeze({
+    magic: { x: 300, y: 452, w: 296, h: 283, label: 'Magic Shop' },
+    software: { x: 901, y: 363, w: 152, h: 374, label: 'Software Hub' },
+  });
+  const state = { mode: 'reference', view: 'full', renderer: 'loading', hover: null,
+    magic: 0, software: 0, frame: 0, last: 0, entering: null, timer: 0,
+    disposed: false, width: 0, height: 0, reason: null };
+  let THREE, renderer, scene, camera, material, plane, raycaster;
+  const pickMeshes = [];
+  const resources = [];
+  const listeners = [];
+  const uniforms = {
+    uClock: { value: 0 }, uLive: { value: 0 }, uMagic: { value: 0 }, uSoftware: { value: 0 },
+  };
+  const on = (el, event, fn, opts) => {
+    el.addEventListener(event, fn, opts);
+    listeners.push(() => el.removeEventListener(event, fn, opts));
+  };
+  const el = (tag, className) => { const node = document.createElement(tag); node.className = className; return node; };
+  const still = root.querySelector('#gateway-still');
+  const canvas = root.querySelector('#gateway-webgl');
+  if (!still || !canvas) return;
+  still.removeAttribute('aria-hidden');
+  still.style.cssText = '';
+  canvas.className = '';
+  canvas.style.cssText = '';
+  const stage = el('div', 'reference-stage');
+  const art = el('div', 'reference-art');
+  art.id = 'reference-art';
+  const hotspots = el('div', 'gateway-hotspots');
+  hotspots.setAttribute('aria-label', 'Enter a shop');
+  for (const [id, d] of Object.entries(doors)) {
+    const a = el('a', `gateway-door gateway-door--${id}`);
+    a.href = `#/${id}`;
+    a.dataset.gatewayDoor = id;
+    a.setAttribute('aria-label', `Enter ${d.label}`);
+    Object.assign(a.style, { left: `${d.x / W * 100}%`, top: `${d.y / H * 100}%`,
+      width: `${d.w / W * 100}%`, height: `${d.h / H * 100}%` });
+    hotspots.append(a);
+  }
+  const curtain = el('div', 'reference-transition');
+  curtain.setAttribute('aria-hidden', 'true');
+  art.append(still, canvas, hotspots);
+  stage.append(art, curtain);
+  const heading = el('h1', 'reference-mobile-heading');
+  heading.innerHTML = 'Find your doorway.<span>Magic and software. Same curious mind.</span>';
+  const views = el('div', 'reference-views');
+  views.setAttribute('role', 'group'); views.setAttribute('aria-label', 'Street framing');
+  views.innerHTML = '<button type="button" data-view="full" aria-pressed="true">Full street</button><button type="button" data-view="magic" aria-pressed="false">Magic view</button><button type="button" data-view="software" aria-pressed="false">Software view</button>';
+  const controls = el('div', 'reference-controls');
+  const note = el('p', 'reference-note');
+  note.textContent = 'Choose a door. Step inside.';
+  const links = el('nav', 'gateway-world-links');
+  links.setAttribute('aria-label', 'Shop destinations');
+  links.innerHTML = '<a href="#/magic" data-gateway-door="magic">Magic Shop <span aria-hidden="true">↗</span></a><a href="#/software" data-gateway-door="software">Software Hub <span aria-hidden="true">↗</span></a>';
+  const lighting = el('div', 'reference-light');
+  lighting.setAttribute('role', 'group'); lighting.setAttribute('aria-label', 'Compare original and live lighting');
+  lighting.innerHTML = '<button type="button" data-mode="reference" aria-pressed="true">Original</button><button type="button" data-mode="live" aria-pressed="false" disabled>Live light</button>';
+  controls.append(note, links, lighting);
+  const status = el('p', 'reference-instruction');
+  status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  root.replaceChildren(heading, stage, views, controls, status);
+  root.className = 'gateway-experience is-reference-repair';
+  root.dataset.view = 'full'; root.dataset.mode = 'reference'; root.dataset.version = VERSION;
+  root.dataset.renderer = 'loading';
+  const isActive = () => document.body.dataset.world === 'gateway' && !document.hidden;
 
-function active() { return document.body.dataset.world === 'gateway' && !document.hidden; }
-function calcLayout(){
-  const width = root.clientWidth || innerWidth, height = root.clientHeight || innerHeight;
-  // CSS fallback and Three.js geometry share this exact cover rule.
-  const coverW = Math.max(width, height * artAspect) * 1.015;
-  const coverH = coverW / artAspect;
-  const overflow = Math.max(0, (coverW - width) / 2);
-  const mobileStartingPosition = mobile.matches ? overflow * .48 : 0;
-  if (!state.touched && state.pan === 0 && state.panGoal === 0) {
-    state.pan = state.panGoal = mobileStartingPosition;
-  }
-  hotspots.style.width = `${coverW}px`;
-  hotspots.style.height = `${coverH}px`;
-  still.style.width = `${coverW}px`;
-  still.style.height = `${coverH}px`;
-  root.style.setProperty('--cover-width', `${coverW}px`);
-  root.style.setProperty('--cover-height', `${coverH}px`);
-  root.dataset.pannable = overflow > 18 ? 'true' : 'false';
-  const h = 2 * 15 * Math.tan((36 * Math.PI / 180) / 2);
-  baseScale = coverH / height * h / sceneHeight;
-  if (renderer) {
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile.matches ? 1.3 : 1.75));
-    renderer.setSize(width, height, false);
-    if (world) world.scale.setScalar(baseScale);
-  }
-  return { width, height, coverW, coverH, overflow, baseScale };
-}
-const dimensions = {current:calcLayout()};
-function applyFallback(){
-  const {overflow} = dimensions.current;
-  state.panGoal = clamp(state.panGoal, -overflow, overflow);
-  const px = state.pan;
-  still.style.transform = `translate(calc(-50% + ${px}px), -50%)`;
-  hotspots.style.transform = `translate(calc(-50% + ${px}px), -50%)`;
-}
-applyFallback();
-function enterWorld(target){
-  if(state.entered || !['magic','software'].includes(target))return;
-  state.entered=true;state.opening=target;state.enteringStart=time();
-  root.dataset.entering = target;
-  tip.textContent = target === 'magic' ? 'ENTERING THE MAGIC SHOP' : 'ENTERING THE SOFTWARE HUB';
-  if(reduced.matches) { location.hash=`#/${target}`;return; }
-  setTimeout(()=>{
-    window.__fromStreetGateway=true;
-    location.hash=`#/${target}`;
-    setTimeout(()=>{state.entered=false; state.opening=null; root.dataset.entering='';},360);
-  },850);
-}
-for (const link of interactive){
-  link.addEventListener('click', e => {e.preventDefault(); enterWorld(link.dataset.gatewayDoor);});
-  link.addEventListener('pointerenter',()=>{state.focused=link.dataset.gatewayDoor; root.dataset.hover=state.focused;});
-  link.addEventListener('pointerleave',()=>{state.focused=null; root.dataset.hover='';});
-  link.addEventListener('focus',()=>{state.focused=link.dataset.gatewayDoor;root.dataset.hover=state.focused;});
-  link.addEventListener('blur',()=>{state.focused=null;root.dataset.hover='';});
-}
-const catSpot = document.getElementById('gateway-cat-spot');
-if(catSpot){
- catSpot.addEventListener('pointerenter',()=>root.classList.add('cat-purr'));
- catSpot.addEventListener('pointerleave',()=>root.classList.remove('cat-purr'));
- catSpot.addEventListener('click',()=>{
-   root.classList.add('cat-purr');
-   setTimeout(()=>root.classList.remove('cat-purr'),1700);
- });
-}
-let startX = null;
-root.addEventListener('pointerdown', e => {
-  if(!mobile.matches || e.target.closest('a,button'))return;
-  startX = {x:e.clientX, pan:state.panGoal};
-}, {passive:true});
-root.addEventListener('pointermove', e => {
-  if(e.pointerType !== 'touch'){
-    state.mx = clamp((e.clientX / innerWidth - .5)*2,-1,1);
-    state.my = clamp((e.clientY / innerHeight - .5)*2,-1,1);
-  }
-  if(startX){
-    state.touched=true;
-    state.panGoal=clamp(startX.pan+e.clientX-startX.x,-dimensions.current.overflow,dimensions.current.overflow);
-  }
-}, {passive:true});
-window.addEventListener('pointerup',()=>{startX=null;});
-window.addEventListener('pointercancel',()=>{startX=null;});
-window.addEventListener('hashchange',()=>{
-  if(location.hash === '#/' || location.hash === '' ){
-    root.dataset.entering = '';
-    state.entered=false;state.opening=null;
-    tip.textContent='CHOOSE A DOOR';
-  }
-});
-function resize(){dimensions.current=calcLayout();applyFallback();}
-window.addEventListener('resize',resize,{passive:true});
-if('ResizeObserver' in window){resizeObserver=new ResizeObserver(resize);resizeObserver.observe(root);}
-
-function loadImage(url){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=url;});}
-async function init(){
-  if(reduced.matches || !window.WebGLRenderingContext)return;
-  try{
-    THREE=await import('https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js');
-    const base='assets/v25/';
-    const [image,depth,warm,cyan,pink]=await Promise.all([
-      loadImage(base+'street-master.webp'), loadImage(base+'depth.png'),
-      loadImage(base+'glow-warm.webp'),loadImage(base+'glow-cyan.webp'),loadImage(base+'glow-pink.webp')
-    ]);
-    if(!root.isConnected)return;
-    renderer = new THREE.WebGLRenderer({canvas,antialias:!mobile.matches,alpha:false,powerPreference:'high-performance'});
-    renderer.outputColorSpace=THREE.SRGBColorSpace;
-    renderer.toneMapping=THREE.NoToneMapping;
-    renderer.setClearColor(0x05070d,1);
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(36,innerWidth/innerHeight,.1,100);
-    camera.position.set(0,0,15);
-    camera.lookAt(0,0,0);
-    world=new THREE.Group();scene.add(world);
-    const geometry=new THREE.PlaneGeometry(sceneWidth,sceneHeight,144,96);
-    // A continuous displacement map gives architecture/threshold/foreground distinct Z depth.
-    const dc=document.createElement('canvas');dc.width=depth.width;dc.height=depth.height;
-    const ctx=dc.getContext('2d',{willReadFrequently:true});ctx.drawImage(depth,0,0);
-    const ds=ctx.getImageData(0,0,dc.width,dc.height).data;
-    const attr=geometry.getAttribute('position');const uv=geometry.getAttribute('uv');
-    for(let i=0;i<attr.count;i++){
-      const x=clamp(Math.round(uv.getX(i)*(depth.width-1)),0,depth.width-1);
-      const y=clamp(Math.round((1-uv.getY(i))*(depth.height-1)),0,depth.height-1);
-      const v=ds[(y*depth.width+x)*4]/255;
-      attr.setZ(i,(v-.31)*.9);
+  function layout() {
+    if (state.disposed) return;
+    const sw = stage.clientWidth, sh = stage.clientHeight;
+    if (!sw || !sh) return;
+    let scale = Math.min(sw / W, sh / H, 1);
+    let cx = W / 2, cy = H / 2;
+    if (mobile.matches && state.view !== 'full') {
+      // An explicit close view, never an automatic crop of the initial composition.
+      scale = Math.min(Math.max(sw / 740, sh / 960), 1);
+      cx = state.view === 'magic' ? 390 : 1140; cy = 485;
     }
-    attr.needsUpdate=true;geometry.computeVertexNormals();
-    const makeTexture=(img)=>{
-      const t=new THREE.Texture(img);
-      t.colorSpace=THREE.SRGBColorSpace;
-      t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-      t.needsUpdate=true;
-      return t;
+    const aw = W * scale, ah = H * scale;
+    art.style.width = `${aw}px`; art.style.height = `${ah}px`;
+    art.style.left = `${sw / 2 + (W / 2 - cx) * scale}px`;
+    art.style.top = `${sh / 2 + (H / 2 - cy) * scale}px`;
+    if (renderer && (Math.abs(aw - state.width) > .1 || Math.abs(ah - state.height) > .1)) {
+      const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(5000000 / Math.max(aw * ah, 1)));
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(aw, ah, false);
+    }
+    state.width = aw; state.height = ah;
+    schedule();
+  }
+  function setView(view) {
+    if (!['full', 'magic', 'software'].includes(view)) return;
+    state.view = mobile.matches ? view : 'full';
+    root.dataset.view = state.view;
+    for (const b of views.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.view === state.view));
+    layout();
+  }
+  function setMode(mode) {
+    state.mode = mode === 'live' && renderer && state.renderer === 'webgl' && !reduced.matches ? 'live' : 'reference';
+    root.dataset.mode = state.mode;
+    for (const b of lighting.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
+    uniforms.uLive.value = state.mode === 'live' ? 1 : 0;
+    if (state.mode === 'reference') {
+      state.magic = state.software = 0;
+      uniforms.uMagic.value = uniforms.uSoftware.value = 0;
+    }
+    schedule();
+  }
+  function focusDoor(id) {
+    state.hover = id;
+    status.textContent = id ? `Enter ${doors[id].label}` : '';
+    schedule();
+  }
+  function resetEntry() {
+    clearTimeout(state.timer); state.timer = 0; state.entering = null;
+    delete root.dataset.entering;
+  }
+  function enter(id) {
+    if (!doors[id] || state.entering || state.disposed) return;
+    state.entering = id;
+    root.dataset.entering = id;
+    const finish = () => {
+      window.__fromStreetGateway = true;
+      location.hash = `#/${id}`;
+      const title = document.querySelector(`#${id}-title`);
+      setTimeout(() => {
+        resetEntry();
+        if (title && document.body.dataset.world === id) {
+          title.setAttribute('tabindex', '-1'); title.focus({ preventScroll: true });
+        }
+      }, 80);
     };
-    plane=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({map:makeTexture(image),side:THREE.DoubleSide}));
-    world.add(plane);
-    for(const [name,img] of [['warm',warm],['cyan',cyan],['pink',pink]]){
-      const g=geometry.clone();const ga=g.attributes.position;
-      for(let i=0;i<ga.count;i++)ga.setZ(i,ga.getZ(i)+.018);
-      ga.needsUpdate=true;
-      const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:makeTexture(img),transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,toneMapped:false}));
-      mesh.renderOrder=3;world.add(mesh);glowMeshes[name]=mesh;
-    }
-    // A handful of 3D drizzle strands rather than artificial large white streaks.
-    if(!mobile.matches){
-      const count=65,coords=new Float32Array(count*2*3);
-      for(let i=0;i<count;i++){
-        const x=(Math.random()-.5)*21,y=(Math.random()-.5)*12,z=1+Math.random()*1.3;
-        const ix=i*6;coords[ix]=x;coords[ix+1]=y;coords[ix+2]=z;
-        coords[ix+3]=x-.055;coords[ix+4]=y-.17;coords[ix+5]=z;
-      }
-      const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.Float32BufferAttribute(coords,3));
-      rain=new THREE.LineSegments(rg,new THREE.LineBasicMaterial({color:0xb1bfd2,transparent:true,opacity:.1,depthWrite:false}));
-      scene.add(rain);
-    }
-    resize();
-    canvas.classList.add('is-ready');root.classList.add('has-25d');still.setAttribute('aria-hidden','true');
-    const animate=(ms)=>{
-      requestAnimationFrame(animate);
-      if(!active()||ms-state.last < (mobile.matches?38:26))return;
-      const dt=Math.min(.07,(ms-state.last)/1000 || 0);state.last=ms;
-      state.pan += (state.panGoal-state.pan)*(1-Math.exp(-dt*9));
-      const pxToWorld=(dimensions.current.width>0 ? 2*15*Math.tan(36*Math.PI/360)/dimensions.current.height : 0);
-      const microX=mobile.matches?0:state.mx*.065;
-      const microY=mobile.matches?0:state.my*.045;
-      const totalX = state.pan*pxToWorld + microX;
-      let targetX=totalX, targetY=-microY, targetScale=baseScale;
-      if(state.opening){
-        const f=clamp((ms-state.enteringStart)/820,0,1);
-        const k=1-Math.pow(1-f,3);
-        const center=state.opening==='magic'?(-.215*sceneWidth):(.17*sceneWidth);
-        targetScale=baseScale*(1+1.5*k);
-        targetX=totalX-center*targetScale*k;
-        targetY=-microY+(.07*sceneHeight)*targetScale*k;
-      }
-      world.position.set(targetX,targetY,0);
-      world.scale.setScalar(targetScale);
-      // Distinct irregular warm/cool glow. Old neon may briefly dip rather than flash.
-      const t=ms*.001;
-      if(glowMeshes.warm)glowMeshes.warm.material.opacity=.43+.12*Math.sin(t*7.9)+.045*Math.sin(t*13.1);
-      if(glowMeshes.cyan){
-        if(ms > state.nextFlicker){state.nextFlicker=ms+6400+Math.random()*9500;state.flickerEnd=ms+75+Math.random()*150;}
-        glowMeshes.cyan.material.opacity=ms<state.flickerEnd?.2:(.54+.065*Math.sin(t*1.7));
-      }
-      if(glowMeshes.pink)glowMeshes.pink.material.opacity=.65+.11*Math.sin(t*2.3+1);
-      if(rain){rain.position.y=-((t*.22)%1.3);}
-      renderer.render(scene,camera);
-      const screenX=(state.pan + (microX/pxToWorld||0));
-      hotspots.style.transform=`translate(calc(-50% + ${screenX}px), -50%)`;
-      // Keep the original image precisely registered while WebGL is loading.
-    };
-    requestAnimationFrame(animate);
-  }catch(error){
-    console.warn('2.5D enhancement unavailable; using original artwork and accessible door links.',error);
-    root.classList.remove('has-25d');
+    if (reduced.matches) finish(); else state.timer = setTimeout(finish, 240);
   }
+  for (const a of root.querySelectorAll('[data-gateway-door]')) {
+    const id = a.dataset.gatewayDoor;
+    on(a, 'click', e => {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      e.preventDefault(); enter(id);
+    });
+    on(a, 'pointerenter', () => focusDoor(id));
+    on(a, 'pointerleave', () => focusDoor(null));
+    on(a, 'focus', () => focusDoor(id));
+    on(a, 'blur', () => focusDoor(null));
+  }
+  for (const b of views.querySelectorAll('button')) on(b, 'click', () => setView(b.dataset.view));
+  for (const b of lighting.querySelectorAll('button')) on(b, 'click', () => setMode(b.dataset.mode));
+  on(window, 'resize', () => { if (!mobile.matches) setView('full'); layout(); }, { passive: true });
+  on(window, 'hashchange', () => { resetEntry(); focusDoor(null); setTimeout(layout, 350); });
+  on(document, 'visibilitychange', () => {
+    if (!isActive()) { cancelAnimationFrame(state.frame); state.frame = 0; } else schedule();
+  });
+  on(reduced, 'change', () => {
+    lighting.querySelector('[data-mode="live"]').disabled = reduced.matches || state.renderer !== 'webgl';
+    if (reduced.matches) setMode('reference'); else schedule();
+  });
+  const observer = new ResizeObserver(layout); observer.observe(stage);
+  layout();
+
+  function schedule() {
+    if (!renderer || state.renderer !== 'webgl' || !isActive() || state.frame || state.disposed) return;
+    state.frame = requestAnimationFrame(draw);
+  }
+  function draw(ms) {
+    state.frame = 0;
+    if (!isActive() || state.disposed || state.renderer !== 'webgl') return;
+    const dt = Math.min(.08, (ms - (state.last || ms - 16)) / 1000); state.last = ms;
+    const live = state.mode === 'live';
+    const targetMagic = live && state.hover === 'magic' ? 1 : 0;
+    const targetSoftware = live && state.hover === 'software' ? 1 : 0;
+    const k = 1 - Math.exp(-dt * 12);
+    state.magic += (targetMagic - state.magic) * k;
+    state.software += (targetSoftware - state.software) * k;
+    uniforms.uClock.value = ms / 1000;
+    uniforms.uMagic.value = state.magic; uniforms.uSoftware.value = state.software;
+    renderer.render(scene, camera);
+    if (live || Math.abs(state.magic - targetMagic) + Math.abs(state.software - targetSoftware) > .001) schedule();
+  }
+  function raycastAt(clientX, clientY) {
+    if (!raycaster) return null;
+    const r = art.getBoundingClientRect();
+    const p = new THREE.Vector2((clientX - r.left) / r.width * 2 - 1, 1 - (clientY - r.top) / r.height * 2);
+    raycaster.setFromCamera(p, camera);
+    return raycaster.intersectObjects(pickMeshes, false)[0]?.object.userData.door || null;
+  }
+  on(stage, 'pointermove', e => {
+    if (state.renderer !== 'webgl' || e.pointerType === 'touch') return;
+    const id = raycastAt(e.clientX, e.clientY);
+    if (id !== state.hover) focusDoor(id);
+  }, { passive: true });
+  on(stage, 'pointerleave', () => focusDoor(null));
+
+  function fallback(reason) {
+    state.renderer = 'image'; state.reason = reason; root.dataset.renderer = 'image';
+    cancelAnimationFrame(state.frame); state.frame = 0;
+    setMode('reference');
+    const button = lighting.querySelector('[data-mode="live"]');
+    button.disabled = true;
+    button.title = 'Live light requires WebGL 2. The original artwork and both doors remain available.';
+  }
+  on(canvas, 'webglcontextlost', e => { e.preventDefault(); fallback('context-lost'); });
+  // This repair intentionally keeps the image fallback until a complete GL frame succeeds.
+  async function init() {
+    let gl;
+    try {
+      gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
+      if (!gl) { fallback('webgl-unavailable'); return; }
+      THREE = await import('https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js');
+      await still.decode();
+      if (state.disposed) return;
+      renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.setClearColor(0x080b0e, 1);
+      scene = new THREE.Scene();
+      camera = new THREE.OrthographicCamera(0, W, H, 0, .1, 20);
+      camera.position.set(0, 0, 10);
+      camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
+      const texture = new THREE.Texture(still);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.generateMipmaps = false;
+      texture.minFilter = texture.magFilter = THREE.LinearFilter;
+      texture.needsUpdate = true;
+      resources.push(texture);
+      material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
+      material.onBeforeCompile = shader => {
+        Object.assign(shader.uniforms, uniforms);
+        shader.fragmentShader = `
+          uniform float uClock, uLive, uMagic, uSoftware;
+          float patch(vec2 p, vec2 c, vec2 r) {
+            return 1.0 - smoothstep(0.15, 1.0, length((p-c)/r));
+          }
+        ` + shader.fragmentShader;
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `
+          #include <map_fragment>
+          vec2 px = vec2(vMapUv.x * 1536.0, (1.0-vMapUv.y) * 1024.0);
+          float warm = clamp((diffuseColor.r - diffuseColor.b) * 6.0, 0.0, 1.0);
+          float cool = clamp(max(diffuseColor.b, diffuseColor.g) * 6.0 - diffuseColor.r, 0.0, 1.0);
+          float flicker = 0.0;
+          flicker += patch(px,vec2(354.0,552.0),vec2(12.0,23.0)) * sin(uClock*7.1) * .032;
+          flicker += patch(px,vec2(475.0,563.0),vec2(15.0,29.0)) * sin(uClock*5.3+1.8) * .04;
+          flicker += patch(px,vec2(370.0,462.0),vec2(12.0,20.0)) * sin(uClock*6.6+3.2) * .03;
+          flicker += patch(px,vec2(582.0,457.0),vec2(13.0,23.0)) * sin(uClock*8.3+2.3) * .03;
+          flicker += patch(px,vec2(158.0,307.0),vec2(43.0,66.0)) * sin(uClock*1.5+1.0) * .012;
+          flicker += patch(px,vec2(670.0,301.0),vec2(41.0,66.0)) * sin(uClock*1.7+2.0) * .012;
+          float neon = patch(px,vec2(1100.0,238.0),vec2(94.0,29.0)) * sin(uClock*2.3) * .01;
+          // Brief, independent, downward-only ageing in specific sign segments.
+          float dipA = 1.0-smoothstep(.035,.095,abs(mod(uClock+1.5,13.7)-6.1));
+          float dipB = 1.0-smoothstep(.025,.065,abs(mod(uClock+4.1,19.3)-8.2));
+          neon -= patch(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .12;
+          neon -= patch(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .09;
+          float gain = uLive * (warm*flicker + cool*neon);
+          gain += uMagic * patch(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
+          gain += uSoftware * patch(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
+          diffuseColor.rgb *= exp2(gain);
+        `);
+      };
+      const geometry = new THREE.PlaneGeometry(W, H, 1, 1);
+      plane = new THREE.Mesh(geometry, material);
+      plane.position.set(W / 2, H / 2, 0); scene.add(plane);
+      resources.push(geometry, material);
+      raycaster = new THREE.Raycaster();
+      for (const [id, d] of Object.entries(doors)) {
+        const g = new THREE.PlaneGeometry(d.w, d.h);
+        const m = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+        const mesh = new THREE.Mesh(g, m);
+        mesh.position.set(d.x + d.w/2, H-d.y-d.h/2, .05);
+        mesh.userData.door = id; scene.add(mesh); pickMeshes.push(mesh); resources.push(g, m);
+      }
+      scene.updateMatrixWorld(true);
+      let shaderFailure = false;
+      renderer.debug.onShaderError = () => { shaderFailure = true; };
+      state.width = state.height = 0; layout();
+      renderer.render(scene, camera);
+      if (shaderFailure) throw new Error('Gateway shader compilation failed');
+      state.renderer = 'webgl'; root.dataset.renderer = 'webgl';
+      lighting.querySelector('[data-mode="live"]').disabled = reduced.matches;
+      schedule();
+    } catch (error) {
+      fallback(error?.message || 'renderer-unavailable');
+    }
+  }
+  function dispose() {
+    state.disposed = true; clearTimeout(state.timer); cancelAnimationFrame(state.frame);
+    observer.disconnect(); listeners.forEach(off => off());
+    resources.forEach(resource => resource.dispose()); renderer?.dispose();
+  }
+  // Read-only diagnostics plus explicit controls for repeatable browser regression tests.
+  window.__gatewayTest = Object.freeze({
+    version: VERSION, setMode, setView, raycastAt,
+    snapshot: () => ({ renderer: state.renderer, reason: state.reason, mode: state.mode,
+      view: state.view, camera: camera?.type || null,
+      vertices: plane?.geometry.attributes.position.count || 0,
+      maxDepth: plane ? Math.max(...Array.from(plane.geometry.attributes.position.array).filter((_,i)=>i%3===2)) : null,
+      art: { width: art.getBoundingClientRect().width, height: art.getBoundingClientRect().height },
+      source: { width: still.naturalWidth, height: still.naturalHeight }, doors }),
+    dispose,
+  });
+  init();
 }
-init();
