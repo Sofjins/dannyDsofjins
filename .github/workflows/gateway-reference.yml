@@ -1,12 +1,13 @@
 name: Gateway reference checks
 on:
   push:
-    branches: [main, fix/reference-gateway-20261015]
+    branches: [main, fix/reference-gateway-20261015, feat/living-lanterns]
     paths:
       - 'assets/v25/**'
       - 'assets/site.*'
       - 'index.html'
       - 'tests/gateway_reference.py'
+      - 'tests/gateway_living.py'
       - '.github/workflows/gateway-reference.yml'
   workflow_dispatch:
 permissions:
@@ -32,6 +33,7 @@ jobs:
         run: |
           node --check assets/v25/main.js
           python tests/gateway_reference.py --require-webgl
+          python tests/gateway_living.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -74,3 +74,9 @@ body[data-world="gateway"] .page--gateway{height:auto;min-height:0;overflow:visi
 }
 @media(max-width:360px){.reference-controls{padding-left:14px;padding-right:14px}.reference-light button{padding:6px}}
 @media(prefers-reduced-motion:reduce){.gateway-experience *,.gateway-experience *::before{transition:none!important;animation:none!important}}
+
+/* Invisible, registered targets: no extra lantern graphic or UI rectangle. */
+.living-lantern-target{position:absolute;z-index:5;pointer-events:auto;background:none;border:0;box-shadow:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.living-lantern-target:hover{background:none;border:0;box-shadow:none;outline:none}
+.living-lantern-target:focus-visible{outline:1px dashed #e6c49c;outline-offset:4px}
+.gateway-experience[data-mode="reference"] .living-lantern-target{pointer-events:none}

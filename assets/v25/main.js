@@ -7,7 +7,7 @@ if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'reference-repair-1';
+  const VERSION = 'living-lanterns-1';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -18,7 +18,8 @@ function boot(root) {
   const state = { mode: 'reference', view: 'full', renderer: 'loading', hover: null,
     magic: 0, software: 0, frame: 0, last: 0, entering: null, timer: 0,
     disposed: false, width: 0, height: 0, reason: null };
-  let THREE, renderer, scene, camera, material, plane, raycaster;
+  let THREE, renderer, scene, camera, material, plane, raycaster, living;
+  let elapsed = 0, testTime = null;
   const pickMeshes = [];
   const resources = [];
   const listeners = [];
@@ -67,8 +68,8 @@ function boot(root) {
   links.setAttribute('aria-label', 'Shop destinations');
   links.innerHTML = '<a href="#/magic" data-gateway-door="magic">Magic Shop <span aria-hidden="true">↗</span></a><a href="#/software" data-gateway-door="software">Software Hub <span aria-hidden="true">↗</span></a>';
   const lighting = el('div', 'reference-light');
-  lighting.setAttribute('role', 'group'); lighting.setAttribute('aria-label', 'Compare original and live lighting');
-  lighting.innerHTML = '<button type="button" data-mode="reference" aria-pressed="true">Original</button><button type="button" data-mode="live" aria-pressed="false" disabled>Live light</button>';
+  lighting.setAttribute('role', 'group'); lighting.setAttribute('aria-label', 'Pause or play the living street');
+  lighting.innerHTML = '<button type="button" data-mode="reference" aria-pressed="true">Original</button><button type="button" data-mode="live" aria-pressed="false" disabled>Live scene</button>';
   controls.append(note, links, lighting);
   const status = el('p', 'reference-instruction');
   status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
@@ -113,6 +114,8 @@ function boot(root) {
     root.dataset.mode = state.mode;
     for (const b of lighting.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
     uniforms.uLive.value = state.mode === 'live' ? 1 : 0;
+    living?.enable(state.mode === 'live');
+    state.last = 0;
     if (state.mode === 'reference') {
       state.magic = state.software = 0;
       uniforms.uMagic.value = uniforms.uSoftware.value = 0;
@@ -161,7 +164,7 @@ function boot(root) {
   on(window, 'resize', () => { if (!mobile.matches) setView('full'); layout(); }, { passive: true });
   on(window, 'hashchange', () => { resetEntry(); focusDoor(null); setTimeout(layout, 350); });
   on(document, 'visibilitychange', () => {
-    if (!isActive()) { cancelAnimationFrame(state.frame); state.frame = 0; } else schedule();
+    if (!isActive()) { cancelAnimationFrame(state.frame); state.frame = 0; state.last = 0; } else schedule();
   });
   on(reduced, 'change', () => {
     lighting.querySelector('[data-mode="live"]').disabled = reduced.matches || state.renderer !== 'webgl';
@@ -176,15 +179,18 @@ function boot(root) {
   }
   function draw(ms) {
     state.frame = 0;
-    if (!isActive() || state.disposed || state.renderer !== 'webgl') return;
+    if (!isActive() || state.disposed || state.renderer !== 'webgl') { state.last = 0; return; }
     const dt = Math.min(.08, (ms - (state.last || ms - 16)) / 1000); state.last = ms;
     const live = state.mode === 'live';
+    if (live && testTime === null) elapsed += dt;
+    const clock = testTime === null ? elapsed : testTime;
+    living?.update(clock);
     const targetMagic = live && state.hover === 'magic' ? 1 : 0;
     const targetSoftware = live && state.hover === 'software' ? 1 : 0;
     const k = 1 - Math.exp(-dt * 12);
     state.magic += (targetMagic - state.magic) * k;
     state.software += (targetSoftware - state.software) * k;
-    uniforms.uClock.value = ms / 1000;
+    uniforms.uClock.value = clock;
     uniforms.uMagic.value = state.magic; uniforms.uSoftware.value = state.software;
     renderer.render(scene, camera);
     if (live || Math.abs(state.magic - targetMagic) + Math.abs(state.software - targetSoftware) > .001) schedule();
@@ -260,8 +266,9 @@ function boot(root) {
           // Brief, independent, downward-only ageing in specific sign segments.
           float dipA = 1.0-smoothstep(.035,.095,abs(mod(uClock+1.5,13.7)-6.1));
           float dipB = 1.0-smoothstep(.025,.065,abs(mod(uClock+4.1,19.3)-8.2));
-          neon -= lightMask(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .12;
-          neon -= lightMask(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .09;
+          neon -= lightMask(px,vec2(1344.0,212.0),vec2(75.0,20.0)) * dipA * .48;
+          neon -= lightMask(px,vec2(1274.0,623.0),vec2(38.0,49.0)) * dipB * .30;
+          neon -= lightMask(px,vec2(1166.0,234.0),vec2(41.0,22.0)) * (1.0-smoothstep(.025,.09,abs(mod(uClock+2.0,17.3)-7.5))) * .30;
           float gain = uLive * (warm*flicker + cool*neon);
           gain += uMagic * lightMask(px,vec2(448.0,603.0),vec2(131.0,124.0)) * .09;
           gain += uSoftware * lightMask(px,vec2(984.0,550.0),vec2(65.0,171.0)) * .07;
@@ -285,11 +292,27 @@ function boot(root) {
       renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
+      const { createLivingScene } = await import('./living-scene.js?v=living-1');
+      living = createLivingScene({ THREE, scene, image: still, material, originalTexture: texture });
+      for (const spec of living.prepared.lanterns) {
+        const b = el('button', 'living-lantern-target');
+        b.type = 'button'; b.dataset.lantern = spec.id;
+        b.setAttribute('aria-label', `Gently sway the ${spec.id} lantern`);
+        const [x,y,w,h] = spec.rect;
+        Object.assign(b.style, { left: `${x/W*100}%`, top: `${y/H*100}%`, width: `${w/W*100}%`, height: `${h/H*100}%` });
+        hotspots.append(b);
+        const nudge = () => { if (state.mode === 'live') { living.react(spec.id); schedule(); } };
+        on(b, 'pointerenter', nudge); on(b, 'focus', nudge); on(b, 'click', nudge);
+      }
       state.width = state.height = 0; layout();
       renderer.render(scene, camera);
       if (shaderFailure) throw new Error(`Gateway shader compilation failed: ${shaderFailure}`);
       state.renderer = 'webgl'; root.dataset.renderer = 'webgl';
       lighting.querySelector('[data-mode="live"]').disabled = reduced.matches;
+      // Visitors get the living street automatically; explicit Still and reduced motion remain.
+      setMode(reduced.matches ? 'reference' : 'live');
+      renderer.render(scene,camera);
+      if (shaderFailure) throw new Error(`Living scene compilation failed: ${shaderFailure}`);
       schedule();
     } catch (error) {
       fallback(error?.message || 'renderer-unavailable');
@@ -298,13 +321,16 @@ function boot(root) {
   function dispose() {
     state.disposed = true; clearTimeout(state.timer); cancelAnimationFrame(state.frame);
     observer.disconnect(); listeners.forEach(off => off());
+    living?.dispose();
     resources.forEach(resource => resource.dispose()); renderer?.dispose();
   }
   // Read-only diagnostics plus explicit controls for repeatable browser regression tests.
   window.__gatewayTest = Object.freeze({
     version: VERSION, setMode, setView, raycastAt,
+    seek: seconds => { testTime = Number.isFinite(seconds) ? Math.max(0,seconds) : null; schedule(); },
+    nudgeLantern: id => { living?.react(id); schedule(); },
     snapshot: () => ({ renderer: state.renderer, reason: state.reason, mode: state.mode,
-      view: state.view, camera: camera?.type || null,
+      motion: living?.snapshot() || null, view: state.view, camera: camera?.type || null,
       vertices: plane?.geometry.attributes.position.count || 0,
       maxDepth: plane ? Math.max(...Array.from(plane.geometry.attributes.position.array).filter((_,i)=>i%3===2)) : null,
       art: { width: art.getBoundingClientRect().width, height: art.getBoundingClientRect().height },
