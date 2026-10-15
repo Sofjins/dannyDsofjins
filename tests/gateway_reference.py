@@ -184,6 +184,7 @@ try:
         page.locator('.brand').click();page.wait_for_function('document.body.dataset.world === "gateway"')
         page.wait_for_timeout(900)
         page.emulate_media(reduced_motion='reduce')
+        page.wait_for_function('window.__gatewayTest.snapshot().mode==="reference"')
         check('reduced_motion_reference',page.evaluate('window.__gatewayTest.snapshot().mode')=='reference')
         fallback_page=browser.new_page(viewport={'width':1440,'height':900})
         load(fallback_page,block_gl=True)

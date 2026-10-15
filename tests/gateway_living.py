@@ -36,7 +36,7 @@ def load(page):
 
 def frame(page,t):
     page.evaluate('(t)=>window.__gatewayTest.seek(t)',t)
-    page.wait_for_timeout(100)
+    page.wait_for_function('(time)=>window.__gatewayTest.snapshot().motion.clock===time',arg=t)
     shot=page.locator('.reference-art').screenshot()
     return np.array(Image.open(io.BytesIO(shot)).convert('RGB')).astype('int16')
 
@@ -82,11 +82,14 @@ try:
         page.wait_for_function('(s)=>document.body.dataset.world===s',arg=world)
         page.locator('.brand').click();page.wait_for_function('document.body.dataset.world==="gateway"');page.wait_for_timeout(900)
     check('both_doors_and_return_work',True)
-    page.set_viewport_size({'width':390,'height':844});page.wait_for_timeout(120)
-    page.locator('[data-view="magic"]').click();page.wait_for_timeout(120)
+    page.set_viewport_size({'width':390,'height':844})
+    page.wait_for_function('Math.abs(document.querySelector(".reference-art").getBoundingClientRect().width-innerWidth)<1')
+    page.locator('[data-view="magic"]').click()
+    page.wait_for_function('window.__gatewayTest.snapshot().view==="magic"')
     page.screenshot(path=str(OUT/'living-mobile.png'),full_page=True)
     check('mobile_keeps_live_scene',page.evaluate('window.__gatewayTest.snapshot().mode')=='live')
-    page.emulate_media(reduced_motion='reduce');page.wait_for_timeout(100)
+    page.emulate_media(reduced_motion='reduce')
+    page.wait_for_function('window.__gatewayTest.snapshot().mode==="reference"')
     check('reduced_motion_disables_animation',page.evaluate('window.__gatewayTest.snapshot().mode')=='reference')
     page.close()
     # Record the running page, including a normal hover response, not generated frames.
