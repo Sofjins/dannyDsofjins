@@ -1,5 +1,5 @@
-import { createCatBehavior } from './cat-motion.js?v=living-street-3';
-import { createCatRig } from './cat-rig.js?v=living-street-3';
+import { createCatBehavior } from './cat-motion.js?v=living-street-4';
+import { createCatRig } from './cat-rig.js?v=living-street-4';
 
 export function createCatActor(THREE, model, seed = 97402971) {
   const root = new THREE.Group(); root.name = 'SomaliCat';

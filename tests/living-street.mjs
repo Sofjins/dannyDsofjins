@@ -69,7 +69,9 @@ try {
   verify('curtain pixels move', difference(early, later, [290, 315, 310, 145]).maximum > 4);
   const neonOn = await frame(2);
   const neonOff = await frame(2.4);
+  if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`INITIAL_PREVIEW_BASE64=${(await art.screenshot({ type: 'jpeg', quality: 75 })).toString('base64')}`);
   verify('coffee sign visibly flickers in its new left-hand position', difference(neonOn, neonOff, [1134, 575, 63, 73]).mean > 2);
+  await frame(200);
   const plan = await page.evaluate(() => window.__gatewayTest.snapshot().motion.cat.plan);
   for (const mode of ['drink', 'walk', 'sit-down', 'sit', 'jump', 'land', 'perch', 'jump-down']) {
     const event = plan.find(event => event.mode === mode);
@@ -106,17 +108,17 @@ try {
     await page.waitForFunction(() => document.body.dataset.world === 'gateway');
     await page.waitForTimeout(900);
   }
-  for (const [width, height] of [[1440, 900], [1024, 768], [844, 390], [390, 844], [360, 640]]) {
+  for (const [width, height] of [[1710, 896], [1440, 900], [1024, 768], [844, 390], [390, 844], [360, 640]]) {
     await page.setViewportSize({ width, height });
     await page.waitForTimeout(140);
     const layout = await page.evaluate(() => {
       const artwork = document.querySelector('.reference-art').getBoundingClientRect();
       const stage = document.querySelector('.reference-stage').getBoundingClientRect();
-      return { covered: artwork.left <= stage.left + 1 && artwork.right >= stage.right - 1 && artwork.top <= stage.top + 1 && artwork.bottom >= stage.bottom - 1,
+      return { contained: artwork.left >= stage.left - 1 && artwork.right <= stage.right + 1 && artwork.top >= stage.top - 1 && artwork.bottom <= stage.bottom + 1,
         viewport: Math.abs(stage.width - innerWidth) < 1 && Math.abs(stage.height - innerHeight) < 1,
         overflow: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1 };
     });
-    verify(`scene fills viewport ${width}x${height}`, layout.covered && layout.viewport && !layout.overflow, layout);
+    verify(`full scene fits without cropping at ${width}x${height}`, layout.contained && layout.viewport && !layout.overflow, layout);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('[data-view="software"]').click();
@@ -140,6 +142,11 @@ try {
   verify('doors work without WebGL', true);
   verify('no unhandled runtime or shader errors', report.errors.length === 0, report.errors);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1710, height: 896 });
+  await page.evaluate(() => { window.__gatewayTest.setView('full'); window.__gatewayTest.setMode('live'); window.__gatewayTest.seek(90); });
+  await page.waitForTimeout(160);
+  await page.screenshot({ path: resolve(output, 'street-fullscreen-uncropped.png') });
+  if (process.env.GATEWAY_PREVIEW_LOG === '1') console.log(`WIDE_PREVIEW_BASE64=${(await page.screenshot({ type: 'jpeg', quality: 75 })).toString('base64')}`);
   await page.setViewportSize({ width: 1536, height: 1024 });
   await page.evaluate(() => { window.__gatewayTest.setView('full'); window.__gatewayTest.setMode('live'); });
   await frame(90);

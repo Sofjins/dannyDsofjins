@@ -2,12 +2,14 @@
  * Scene coordinates are the approved artwork's pixels (1536 x 1024).
  * This module enhances the existing static application; no server/build change required.
  */
+import { streetFraming } from './framing.js?v=living-street-4';
+
 const root = document.getElementById('gateway-experience');
 if (root) boot(root);
 
 function boot(root) {
   const W = 1536, H = 1024;
-  const VERSION = 'living-street-3';
+  const VERSION = 'living-street-4';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 760px)');
   // Measured inside the actual openings, excluding lanterns, curtain and masonry.
@@ -39,6 +41,8 @@ function boot(root) {
   canvas.className = '';
   canvas.style.cssText = '';
   const stage = el('div', 'reference-stage');
+  const surround = el('div', 'reference-surround');
+  surround.setAttribute('aria-hidden', 'true');
   const art = el('div', 'reference-art');
   art.id = 'reference-art';
   const hotspots = el('div', 'gateway-hotspots');
@@ -55,7 +59,7 @@ function boot(root) {
   const curtain = el('div', 'reference-transition');
   curtain.setAttribute('aria-hidden', 'true');
   art.append(still, canvas, hotspots);
-  stage.append(art, curtain);
+  stage.append(surround, art, curtain);
   const heading = el('h1', 'reference-mobile-heading');
   heading.innerHTML = 'Find your doorway.<span>Magic and software. Same curious mind.</span>';
   const views = el('div', 'reference-views');
@@ -83,16 +87,16 @@ function boot(root) {
     if (state.disposed) return;
     const sw = stage.clientWidth, sh = stage.clientHeight;
     if (!sw || !sh) return;
-    const scale = Math.max(sw / W, sh / H);
-    let cx = W / 2, cy = H / 2;
-    if (mobile.matches && state.view !== 'full') {
-      cx = state.view === 'magic' ? 420 : 1130;
-    }
-    const aw = W * scale, ah = H * scale;
+    const framing = streetFraming(sw, sh, state.view);
+    const aw = framing.artWidth, ah = framing.artHeight;
     art.style.width = `${aw}px`; art.style.height = `${ah}px`;
-    cx = Math.max(sw / scale / 2, Math.min(W - sw / scale / 2, cx));
-    art.style.left = `${sw / 2 + (W / 2 - cx) * scale}px`;
-    art.style.top = `${sh / 2 + (H / 2 - cy) * scale}px`;
+    art.style.left = `${framing.left}px`;
+    art.style.top = `${framing.top}px`;
+    const direction = framing.horizontal ? 'right' : 'bottom';
+    art.style.maskImage = framing.feather ? `linear-gradient(to ${direction},transparent,#000 ${framing.feather}px,#000 calc(100% - ${framing.feather}px),transparent)` : 'none';
+    surround.dataset.axis = framing.horizontal ? 'wide' : 'portrait';
+    surround.style.backgroundSize = `${framing.surroundWidth}px ${framing.surroundHeight}px`;
+    surround.style.backgroundPosition = framing.horizontal ? `calc(50% + ${aw * 32 / 1086}px) center` : `center calc(50% + ${aw * 63 / 836}px)`;
     if (renderer && (Math.abs(aw - state.width) > .1 || Math.abs(ah - state.height) > .1)) {
       const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(5000000 / Math.max(aw * ah, 1)));
       renderer.setPixelRatio(dpr);
@@ -235,7 +239,7 @@ function boot(root) {
     try {
       gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
       if (!gl) { fallback('webgl-unavailable'); return; }
-      THREE = await import('./three-vendor.js?v=living-street-3');
+      THREE = await import('./three-vendor.js?v=living-street-4');
       await still.decode();
       if (state.disposed) return;
       renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, alpha: false });
@@ -315,10 +319,10 @@ function boot(root) {
         shaderFailure = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].filter(Boolean).join(' | ') || 'Unknown shader error';
       };
       const cleanPlate = new Image();
-      cleanPlate.src = new URL('./street-clean.webp?v=living-street-3', import.meta.url).href;
+      cleanPlate.src = new URL('./street-clean.webp?v=living-street-4', import.meta.url).href;
       await cleanPlate.decode();
       if (state.disposed) return;
-      const { createLivingScene } = await import('./living-scene.js?v=living-street-3');
+      const { createLivingScene } = await import('./living-scene.js?v=living-street-4');
       living = await createLivingScene({ THREE, scene, image: still, material, originalTexture: texture, cleanPlate });
       catTarget = el('button', 'living-cat-target');
       catTarget.type = 'button';

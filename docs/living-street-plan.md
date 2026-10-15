@@ -41,3 +41,9 @@ Generated images are artwork edits, not new 3D models. The model is separately l
 4. **Coffee and Japanese neon — precise-object-edit/text-localization.** Move the existing cup, COFFEE and opening hours from the bottom-right to the bottom-left of the Software Hub window. Use OPEN above 24/7, not WORKING. Restore the old location as dark window glass. Add one slim, simple vertical development/programming neon at the right, with blue-violet Japanese lettering. Keep all other scene elements unchanged.
 
 The final selected image edit is `exec-300c1bdf-5a52-4ce6-9ec6-d939f7df0781.png`, generated in this task and exported at original 1536×1024 resolution. Runtime feathered patch compositing prevents incidental changes elsewhere in that generated plate from replacing approved artwork.
+
+## Full composition, full viewport
+
+The earlier cover-style layout enlarged and cropped the artwork on non-3:2 screens. Full street now uses contain-style fitting for the actual interactive art, with generated side/vertical environment extensions behind it. This keeps both shops, roof and foreground visible without distortion or a surrounding black frame. Only the explicitly selected mobile close views use cover. A narrow edge feather joins the two layers; no mask is applied at the native aspect ratio, preserving exact reference tests.
+
+`street-surround-wide.webp` and `street-surround-portrait.webp` are built-in imagegen outpaint outputs, exported to WebP. They are decorative background context; the original architecture, animated props and doorway hitboxes still use the untouched 1536×1024 coordinate system. Wide output: `exec-3eee90fa-9837-4a6d-a0b0-ed8dafcda2a5.png` (2172×724). Portrait output: `exec-5fb84f63-0521-453f-9c88-36af5c2331e2.png` (836×1881). Registration offsets are measured against the source, not assumed from the requested output sizes. Full prompts are in `surround-prompts.md`.

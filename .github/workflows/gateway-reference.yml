@@ -10,6 +10,7 @@ on:
       - 'tests/gateway_living.py'
       - 'tests/living-street.mjs'
       - 'tests/cat-motion.test.mjs'
+      - 'tests/deployed-street.mjs'
       - 'package*.json'
       - '.github/workflows/gateway-reference.yml'
   workflow_dispatch:
@@ -40,6 +41,9 @@ jobs:
           GATEWAY_PREVIEW_LOG=1 npm run test:browser
           python tests/gateway_reference.py --require-webgl
           python tests/gateway_living.py
+      - name: Inspect the public Coolify deployment without blocking local regression results
+        if: always()
+        run: node tests/deployed-street.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

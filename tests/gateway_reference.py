@@ -62,7 +62,10 @@ def load(page, *, block_gl=False):
         if block_gl:
             page.evaluate(script)
         page.add_script_tag(content=(ROOT/'assets/site.js').read_text())
-        page.add_script_tag(type='module', content=(ROOT/'assets/v25/main.js').read_text())
+        module=(ROOT/'assets/v25/main.js').read_text()
+        framing=(ROOT/'assets/v25/framing.js').read_text().replace('export function','function')
+        module=module.replace("import { streetFraming } from './framing.js?v=living-street-4';",framing)
+        page.add_script_tag(type='module', content=module)
     else:
         # Use exactly the production-pinned Three.js package, served locally for deterministic CI.
         def module_route(route):
@@ -85,7 +88,7 @@ def bounded(page):
     return page.evaluate('''() => {
       const a=document.querySelector('.reference-art').getBoundingClientRect();
       const b=document.querySelector('.reference-stage').getBoundingClientRect();
-      return {inside:a.left<=b.left+.6 && a.right>=b.right-.6 && a.top<=b.top+.6 && a.bottom>=b.bottom-.6 && Math.abs(b.width-innerWidth)<1 && Math.abs(b.height-innerHeight)<1,
+      return {inside:a.left>=b.left-.6 && a.right<=b.right+.6 && a.top>=b.top-.6 && a.bottom<=b.bottom+.6 && Math.abs(b.width-innerWidth)<1 && Math.abs(b.height-innerHeight)<1,
       aspect:a.width/a.height, overflow:document.documentElement.scrollWidth>innerWidth+1,
       size:[a.width,a.height]}; }''')
 

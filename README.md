@@ -23,7 +23,7 @@ Open http://localhost:4173. Production is static HTML/CSS/JS and local assets; C
 - Nine foliage meshes and three burgundy curtain panels have individually anchored motion. Architecture never bends. These are textured cutouts, not fully volumetric plant models.
 - Lanterns sway independently, candle flames and local illumination vary, and separate neon signs have different rhythms. Coffee now sits at the window's bottom-left with OPEN 24/7; a slim Japanese development sign sits on the right.
 - Five mist layers add depth without rain. The gutter releases three drops every 7.4 seconds, with small bowl ripples after impact.
-- The scene covers the viewport without a frame. Wide and portrait screens crop the art rather than stretching it; mobile focus controls and persistent destination links keep both entrances accessible.
+- The original composition fits the viewport without cropping or stretching. Generated environment extensions fill wider and taller screens rather than black bars. Only explicit mobile focus controls select a close-up; destination links remain accessible.
 - Original mode restores the untouched reference. Reduced motion and WebGL failure retain the still artwork and working navigation. Animation pauses when the tab or gateway is hidden.
 
 ## Assets and checks

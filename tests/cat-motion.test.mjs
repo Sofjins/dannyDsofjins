@@ -3,6 +3,21 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { catPose, createCatBehavior, CAT_GROUND, CAT_BOX_TOP } from '../assets/v25/cat-motion.js';
 import { dripState, DRIP_CYCLE, DRIP_STARTS, FALL_TIME, BOWL } from '../assets/v25/gutter.js';
+import { streetFraming } from '../assets/v25/framing.js';
+
+test('full street always fits without crop or distortion, with environment beyond its edges', () => {
+  for (const [width, height] of [[1536, 1024], [1710, 896], [1440, 900], [2560, 1080], [1024, 768], [844, 390], [390, 844], [360, 640]]) {
+    const framing = streetFraming(width, height);
+    assert.ok(framing.artWidth <= width + .001 && framing.artHeight <= height + .001);
+    assert.ok(Math.abs(framing.artWidth / framing.artHeight - 1.5) < .00001);
+    assert.equal(framing.left, width / 2);
+    assert.equal(framing.top, height / 2);
+    assert.ok(framing.surroundWidth >= width - .001 && framing.surroundHeight >= height - .001);
+  }
+  const magic = streetFraming(390, 844, 'magic'), software = streetFraming(390, 844, 'software');
+  assert.ok(magic.close && software.close);
+  assert.ok(magic.left > software.left);
+});
 
 test('seeded behavior has long varied rests, both walking directions, drinking and crate visits', () => {
   const behavior = createCatBehavior(97402971);

@@ -1,5 +1,5 @@
-import { FOLIAGE } from './foliage.js?v=living-street-3';
-import { CURTAINS } from './curtains.js?v=living-street-3';
+import { FOLIAGE } from './foliage.js?v=living-street-4';
+import { CURTAINS } from './curtains.js?v=living-street-4';
 
 export const CLEAN_PATCHES = [[628, 678, 188, 114], [1090, 188, 145, 95], [1231, 112, 243, 205],
   [1106, 548, 216, 151], [1330, 312, 54, 223]];

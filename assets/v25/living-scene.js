@@ -1,10 +1,10 @@
 /** Rigid 2.5D props over the reference-locked architecture, rendered by Three.js. */
-import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES} from './living-assets.js?v=living-street-3';
-import {createFoliage} from './foliage.js?v=living-street-3';
-import {createAtmosphere} from './atmosphere.js?v=living-street-3';
-import {createStreetCat} from './street-cat.js?v=living-street-3';
-import {createCurtains} from './curtains.js?v=living-street-3';
-import {createGutter} from './gutter.js?v=living-street-3';
+import {prepareLivingAssets, lanternAngle, CLEAN_PATCHES} from './living-assets.js?v=living-street-4';
+import {createFoliage} from './foliage.js?v=living-street-4';
+import {createAtmosphere} from './atmosphere.js?v=living-street-4';
+import {createStreetCat} from './street-cat.js?v=living-street-4';
+import {createCurtains} from './curtains.js?v=living-street-4';
+import {createGutter} from './gutter.js?v=living-street-4';
 export async function createLivingScene({THREE,scene,image,material,originalTexture,cleanPlate}) {
   const H=1024,resources=[], prepared=prepareLivingAssets(image,cleanPlate);
   const root=new THREE.Group();root.name='LivingProps';root.visible=false;scene.add(root);
