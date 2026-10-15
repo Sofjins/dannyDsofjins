@@ -113,8 +113,8 @@ export function prepareLivingAssets(image, cleanPlate, pavementPlate, foliageAtl
     context.putImageData(pixels, 0, 0);
     return { ...spec, texture, plate, isolated: true, alphaOccupancy: occupied / (width * height) };
   };
-  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut);
-  const foliage=FOLIAGE.map(foliageAtlas && foliagePlate ? isolatePlant : cut), curtains=CURTAINS.map(cut);
+  const foliage=FOLIAGE.map(foliageAtlas && foliagePlate ? isolatePlant : cut);
+  const lanterns=LANTERNS.map(cut), flames=FLAMES.map(cut), curtains=CURTAINS.map(cut);
   return {clean,lanterns,flames,foliage,curtains,catRemoved:Boolean(cleanPlate)};
 }
 

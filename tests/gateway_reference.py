@@ -94,6 +94,18 @@ def bounded(page):
       aspect:a.width/a.height, overflow:document.documentElement.scrollWidth>innerWidth+1,
       size:[a.width,a.height]}; }''')
 
+def wait_full_layout(page):
+    page.wait_for_function('''() => {
+      const art = document.querySelector('.reference-art').getBoundingClientRect();
+      const stage = document.querySelector('.reference-stage').getBoundingClientRect();
+      const expectedWidth = Math.min(innerWidth, innerHeight * 1.5);
+      return Math.abs(stage.width - innerWidth) < 1 && Math.abs(stage.height - innerHeight) < 1
+        && Math.abs(art.width - expectedWidth) < 1
+        && Math.abs(art.height - expectedWidth / 1.5) < 1
+        && art.left >= stage.left - .6 && art.right <= stage.right + .6
+        && art.top >= stage.top - .6 && art.bottom <= stage.bottom + .6;
+    }''')
+
 try:
     with sync_playwright() as p:
         exe = os.environ.get('BROWSER_PATH')
@@ -141,9 +153,9 @@ try:
             check('reference_reset_exact',int(np.abs(reset-actual).max())==0)
         overlay.evaluate('(element)=>element.remove()')
         for width,height in [(1710,896),(1440,900),(1024,768),(844,390),(390,844),(360,640)]:
-            page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(130)
+            page.set_viewport_size({'width':width,'height':height});wait_full_layout(page)
             check(f'fullscreen_{width}x{height}', (r:=bounded(page))['inside'] and not r['overflow'] and abs(r['aspect']-1.5)<.002, r)
-        page.set_viewport_size({'width':1710,'height':1000});page.wait_for_timeout(100)
+        page.set_viewport_size({'width':1710,'height':1000});wait_full_layout(page)
         page.screenshot(path=str(OUT/'desktop.png'))
         for door in ['magic','software']:
             a = page.locator(f'.gateway-door--{door}')
@@ -158,13 +170,13 @@ try:
             check(f'door_route_{door}',page.evaluate('document.body.dataset.world')==door)
             page.locator('.brand').click()
             page.wait_for_function('document.body.dataset.world === "gateway"');page.wait_for_timeout(900)
-        page.set_viewport_size({'width':390,'height':844});page.wait_for_timeout(100)
+        page.set_viewport_size({'width':390,'height':844});wait_full_layout(page)
         page.mouse.move(0,0)
         page.screenshot(path=str(OUT/'mobile-full.png'),full_page=True)
         page.locator('[data-view="magic"]').click();page.wait_for_timeout(100)
         check('explicit_mobile_focus',page.evaluate('window.__gatewayTest.snapshot().view')=='magic')
         page.screenshot(path=str(OUT/'mobile-magic.png'),full_page=True)
-        page.locator('[data-view="full"]').click();page.wait_for_timeout(100)
+        page.locator('[data-view="full"]').click();wait_full_layout(page)
         check('mobile_return_full',bounded(page)['inside'])
         page.locator('.gateway-world-links a').nth(1).click()
         page.wait_for_function('document.body.dataset.world === "software"')
